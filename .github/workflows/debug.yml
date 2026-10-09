@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [only-SearchPage, only-SettingsPage, only-AboutPage]
+        variant: [v-searchA, v-searchB]
     steps:
       - uses: actions/checkout@v4
 
