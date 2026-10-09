@@ -1,4 +1,5 @@
 <p dir="rtl" align="right"><b>قاموس صخر الحديث</b></p>
+<p dir="rtl" align="right">تطبيق قاموس صخر - إعادة احياء لبرنامج قاموس صخر الأصلي الصادر سنة 1996</p>
 
 # Sakhr Dictionary Revive
 
