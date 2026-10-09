@@ -17,6 +17,8 @@ public partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         AppWindow.Resize(new Windows.Graphics.SizeInt32(1200, 700));
+        // Taskbar/Alt-Tab icon: unpackaged apps do not inherit the exe icon on the window.
+        try { AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); } catch { }
         ApplyTheme(_settings.Theme);
         ApplyBackdrop(_settings.Backdrop);
         SetAccent(ParseAccent(_settings.Accent), save: false);
