@@ -22,11 +22,16 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        foreach (var a in Environment.GetCommandLineArgs())
+        var argv = Environment.GetCommandLineArgs();
+        for (int i = 0; i < argv.Length; i++)
         {
+            var a = argv[i];
             if (a.StartsWith("--screenshot=")) ScreenshotPath = a[13..];
+            else if (a == "--screenshot" && i + 1 < argv.Length) ScreenshotPath = argv[++i];
             if (a.StartsWith("--shot-word=")) ShotWord = a[12..];
+            else if (a == "--shot-word" && i + 1 < argv.Length) ShotWord = argv[++i];
             if (a.StartsWith("--theme=")) ShotTheme = a[8..];
+            else if (a == "--theme" && i + 1 < argv.Length) ShotTheme = argv[++i];
         }
         _mutex = new Mutex(true, "FluentSakhrDictionary.SingleInstance", out bool created);
         if (!created) { Environment.Exit(0); return; }
