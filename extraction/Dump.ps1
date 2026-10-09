@@ -35,6 +35,8 @@ public class WinD {
   [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
   [DllImport("user32.dll")] public static extern int GetDlgCtrlID(IntPtr h);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+  [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr h, int c);
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)]
   public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr w, string l, uint flags, uint timeout, out IntPtr result);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)]
@@ -184,6 +186,14 @@ function Launch-App {
 $ui = Launch-App
 if (-not $ui -or $ui.edit -eq [IntPtr]::Zero) { Log "FATAL: app UI not found"; exit 1 }
 Log "UI ready: dlg=0x$($ui.dlg.ToInt64().ToString('X')) edit=0x$($ui.edit.ToInt64().ToString('X')) btn=0x$($ui.btn.ToInt64().ToString('X')) lbWord=0x$($ui.lbWord.ToInt64().ToString('X')) lbMean=0x$($ui.lbMean.ToInt64().ToString('X'))"
+
+# v6-proven activation sequence: the app only processes lookups once its
+# dialog has been shown and brought to the foreground
+[WinD]::ShowWindowAsync($ui.dlg, 9) | Out-Null  # SW_RESTORE
+[WinD]::ShowWindowAsync($ui.dlg, 5) | Out-Null  # SW_SHOW
+[WinD]::SetForegroundWindow($ui.dlg) | Out-Null
+Start-Sleep -Seconds 2
+Log "dialog shown + foregrounded"
 
 # wait for the dictionary engine to finish loading (dialog appears before data)
 $ready = $false
