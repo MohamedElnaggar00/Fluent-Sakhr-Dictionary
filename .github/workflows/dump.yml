@@ -1,0 +1,33 @@
+name: extraction-dump
+
+on:
+  workflow_dispatch:
+    inputs:
+      wordsfile:
+        description: 'Words file in repo'
+        default: 'data/words.txt'
+      start:
+        description: 'Skip this many words'
+        default: '0'
+      count:
+        description: 'How many words to dump'
+        default: '20'
+      outname:
+        description: 'Output file name'
+        default: 'dump.jsonl'
+
+jobs:
+  dump:
+    runs-on: windows-2022
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run dump
+        shell: powershell
+        run: .\extraction\Dump.ps1 -WordsFile "${{ github.event.inputs.wordsfile }}" -Start ${{ github.event.inputs.start }} -Count ${{ github.event.inputs.count }} -OutName "${{ github.event.inputs.outname }}"
+      - name: Upload dump results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dump-results-${{ github.event.inputs.start }}-${{ github.event.inputs.count }}
+          path: ${{ runner.temp }}\dump-results
