@@ -40,13 +40,6 @@
                 <RadioButton x:Name="BackdropAcrylic" Content="Desktop Acrylic" Tag="Acrylic"/>
             </RadioButtons>
 
-            <TextBlock x:Name="UpdatesHeader" Text="Updates" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,4"/>
-            <TextBlock x:Name="UpdatesNote" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
-            <Button x:Name="CheckButton" Content="Check for updates" Click="CheckUpdates_Click" Margin="0,4,0,0"/>
-            <StackPanel Orientation="Horizontal" Spacing="6">
-                <TextBlock x:Name="UpdateResult" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                <HyperlinkButton x:Name="UpdateLink" Content="Open download page" Visibility="Collapsed" VerticalAlignment="Center"/>
-            </StackPanel>
         </StackPanel>
     </ScrollViewer>
 </Page>

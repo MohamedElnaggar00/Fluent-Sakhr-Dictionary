@@ -16,10 +16,12 @@ namespace FluentSakhrDictionarySetup;
 static class Program
 {
     const string Product = "Sakhr Dictionary Revive";
-    const string Version = "0.3.0";
+    const string Version = "1.0.0";
     static string Target => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "SakhrDictionaryRevive");
     static readonly HttpClient Http = new() { Timeout = TimeSpan.FromMinutes(15) };
     [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int a, ref int v, int s);
+    static bool _dark; // follows the Windows app theme (registry); --preview-dark forces it for CI captures
+    static SolidColorBrush TextBrush => new(_dark ? Color.FromRgb(255,255,255) : Color.FromRgb(0,0,0));
     [STAThread] static void Main(string[] args)
     {
         if (args.Contains("--uninstall"))
@@ -48,11 +50,12 @@ static class Program
             return;
         }
         if (args.Contains("--verify-install")) { Install(_ => { }); return; }
+        _dark = args.Contains("--preview-dark") || Registry.GetValue(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 1) is int useLight && useLight == 0;
         var app = new Application();
-        var window = new Window { Title = Product + " Setup", Width = 490, Height = 615, ResizeMode = ResizeMode.NoResize, WindowStartupLocation = WindowStartupLocation.CenterScreen, Background = new SolidColorBrush(Color.FromRgb(243,243,246)), FontFamily = new FontFamily("Segoe UI") };
-        window.SourceInitialized += (_, _) => { var h = new WindowInteropHelper(window).Handle; int backdrop = 2, corner = 2; try { DwmSetWindowAttribute(h, 38, ref backdrop, 4); DwmSetWindowAttribute(h, 33, ref corner, 4); } catch { } };
+        var window = new Window { Title = Product + " Setup", Width = 490, Height = 615, ResizeMode = ResizeMode.NoResize, WindowStartupLocation = WindowStartupLocation.CenterScreen, Background = new SolidColorBrush(_dark ? Color.FromRgb(32,32,32) : Color.FromRgb(243,243,246)), FontFamily = new FontFamily("Segoe UI") };
+        window.SourceInitialized += (_, _) => { var h = new WindowInteropHelper(window).Handle; int backdrop = 2, corner = 2, darkMode = _dark ? 1 : 0; try { DwmSetWindowAttribute(h, 38, ref backdrop, 4); DwmSetWindowAttribute(h, 33, ref corner, 4); DwmSetWindowAttribute(h, 20, ref darkMode, 4); } catch { } };
         var panel = new StackPanel { Margin = new Thickness(28) };
-        panel.Children.Add(new TextBlock { Text = "About", FontSize = 24, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0,0,0,18) });
+        panel.Children.Add(new TextBlock { Text = "About", FontSize = 24, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0,0,0,18), Foreground = TextBrush });
         var about = new StackPanel { Margin = new Thickness(20), HorizontalAlignment = HorizontalAlignment.Center };
         about.Children.Add(new Border { Width = 104, Height = 104, CornerRadius = new CornerRadius(18), Background = new SolidColorBrush(Color.FromRgb(0,166,166)), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0,0,0,14), Child = new Image { Width = 72, Height = 72, Source = new BitmapImage(new Uri("pack://application:,,,/logo.png")) } });
         about.Children.Add(Text("Sakhr Dictionary Revive", 24));
@@ -60,17 +63,17 @@ static class Program
         about.Children.Add(Text("Version " + Version, 14));
         about.Children.Add(Text("brought to you by Instinct", 14));
         about.Children.Add(Text("Developer: Mohamed Elnaggar", 14));
-        panel.Children.Add(new Border { CornerRadius = new CornerRadius(12), Background = Brushes.White, BorderBrush = new SolidColorBrush(Color.FromRgb(224,224,230)), BorderThickness = new Thickness(1), Child = about });
-        panel.Children.Add(new TextBlock { Text = "The app installs into Program Files. Requirements are checked and downloaded from Microsoft when missing, so an internet connection may be needed once.", TextWrapping = TextWrapping.Wrap, FontSize = 13, Margin = new Thickness(0,18,0,12), Foreground = Brushes.DimGray });
-        var status = new TextBlock { Text = "Ready to install", TextWrapping = TextWrapping.Wrap, FontSize = 13, Margin = new Thickness(0,0,0,10) };
+        panel.Children.Add(new Border { CornerRadius = new CornerRadius(12), Background = new SolidColorBrush(_dark ? Color.FromRgb(43,43,43) : Color.FromRgb(255,255,255)), BorderBrush = new SolidColorBrush(_dark ? Color.FromRgb(64,64,64) : Color.FromRgb(224,224,230)), BorderThickness = new Thickness(1), Child = about });
+        panel.Children.Add(new TextBlock { Text = "The app installs into Program Files. Requirements are checked and downloaded from Microsoft when missing, so an internet connection may be needed once.", TextWrapping = TextWrapping.Wrap, FontSize = 13, Margin = new Thickness(0,18,0,12), Foreground = new SolidColorBrush(_dark ? Color.FromRgb(160,160,160) : Color.FromRgb(100,100,100)) });
+        var status = new TextBlock { Text = "Ready to install", TextWrapping = TextWrapping.Wrap, FontSize = 13, Margin = new Thickness(0,0,0,10), Foreground = TextBrush };
         panel.Children.Add(status);
-        var progress = new ProgressBar { Height = 6, Visibility = Visibility.Collapsed, IsIndeterminate = true, Margin = new Thickness(0,0,0,12), Foreground = new SolidColorBrush(Color.FromRgb(22,163,74)), Background = new SolidColorBrush(Color.FromRgb(222,222,228)), BorderThickness = new Thickness(0) };
+        var progress = new ProgressBar { Height = 6, Visibility = Visibility.Collapsed, IsIndeterminate = true, Margin = new Thickness(0,0,0,12), Foreground = new SolidColorBrush(Color.FromRgb(22,163,74)), Background = new SolidColorBrush(_dark ? Color.FromRgb(64,64,64) : Color.FromRgb(222,222,228)), BorderThickness = new Thickness(0) };
         panel.Children.Add(progress);
         var install = new Button { Content = "install now", Height = 44, FontSize = 16, FontWeight = FontWeights.SemiBold, Foreground = Brushes.Black, Background = new SolidColorBrush(Color.FromRgb(76,194,255)), BorderThickness = new Thickness(0) };
         panel.Children.Add(install);
         var done = new StackPanel { Visibility = Visibility.Collapsed, HorizontalAlignment = HorizontalAlignment.Center };
         done.Children.Add(new Border { Width = 44, Height = 44, CornerRadius = new CornerRadius(22), Background = new SolidColorBrush(Color.FromRgb(22,163,74)), HorizontalAlignment = HorizontalAlignment.Center, Child = new TextBlock { Text = "\uE73E", FontFamily = new FontFamily("Segoe MDL2 Assets, Segoe Fluent Icons"), FontSize = 22, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } });
-        done.Children.Add(new TextBlock { Text = "Installed", FontSize = 16, FontWeight = FontWeights.SemiBold, Foreground = Brushes.Black, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0,8,0,0) });
+        done.Children.Add(new TextBlock { Text = "Installed", FontSize = 16, FontWeight = FontWeights.SemiBold, Foreground = TextBrush, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0,8,0,0) });
         panel.Children.Add(done);
         Action showDone = () => { progress.Visibility = Visibility.Collapsed; install.Visibility = Visibility.Collapsed; status.Visibility = Visibility.Collapsed; done.Visibility = Visibility.Visible; };
         bool busy = false;
@@ -89,7 +92,7 @@ static class Program
             finally { busy = false; }
         };
         window.Content = panel;
-        if (args.Length == 2 && (args[0] == "--preview" || args[0] == "--preview-busy" || args[0] == "--preview-done"))
+        if (args.Length == 2 && (args[0] == "--preview" || args[0] == "--preview-dark" || args[0] == "--preview-busy" || args[0] == "--preview-done"))
         {
             if (args[0] == "--preview-busy") { install.IsEnabled = false; progress.Visibility = Visibility.Visible; status.Text = "Installing app files..."; }
             if (args[0] == "--preview-done") showDone();
@@ -108,7 +111,7 @@ static class Program
     {
         try { Process.Start(new ProcessStartInfo("explorer.exe", "\"" + Path.Combine(Target, "SakhrDictionaryRevive.exe") + "\"") { UseShellExecute = true }); } catch { }
     }
-    static TextBlock Text(string text, double size) => new() { Text = text, FontSize = size, TextAlignment = TextAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0,4,0,4) };
+    static TextBlock Text(string text, double size) => new() { Text = text, FontSize = size, TextAlignment = TextAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0,4,0,4), Foreground = TextBrush };
     static void StopApp() { foreach (var p in Process.GetProcessesByName("SakhrDictionaryRevive")) { p.Kill(); p.WaitForExit(10000); p.Dispose(); } }
     static string Run(string exe, string arguments)
     {

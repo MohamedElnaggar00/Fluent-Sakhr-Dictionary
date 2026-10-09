@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -8,7 +7,6 @@ namespace FluentSakhrDictionary;
 public partial class SettingsPage : Page
 {
     static readonly string[] AccentSwatches = { "#00A6A6", "#0078D4", "#5B5FC7", "#8764B8", "#C239B3", "#E81123", "#F7630C", "#FFB900", "#10893E", "#69797E" };
-    static string CurrentVersion => typeof(App).Assembly.GetName().Version?.ToString(3) ?? "0.1.0";
 
     readonly Settings _settings;
     bool _ready;
@@ -49,12 +47,6 @@ public partial class SettingsPage : Page
         BackdropMica.Content = "Mica";
         BackdropMicaAlt.Content = "Mica Alt";
         BackdropAcrylic.Content = Loc.T("Desktop Acrylic", "أكريليك سطح المكتب");
-        UpdatesHeader.Text = Loc.T("Updates", "التحديثات");
-        UpdatesNote.Text = Loc.T(
-            "The app never checks for updates on its own. Press the button to check once, right now.",
-            "لا يتحقق التطبيق من التحديثات من تلقاء نفسه. اضغط الزر للتحقق مرة واحدة الآن.");
-        CheckButton.Content = Loc.T("Check for updates", "التحقق من التحديثات");
-        UpdateLink.Content = Loc.T("Open download page", "فتح صفحة التنزيل");
     }
 
     static bool _applyingLanguage; // re-navigation rebuilds this page; never recurse
@@ -148,47 +140,5 @@ public partial class SettingsPage : Page
         _settings.Save();
     }
 
-    /// <summary>Manual update check: fires only from this button, never in the background.</summary>
-    async void CheckUpdates_Click(object sender, RoutedEventArgs e)
-    {
-        CheckButton.IsEnabled = false;
-        UpdateLink.Visibility = Visibility.Collapsed;
-        UpdateResult.Text = Loc.T("Checking...", "جارٍ التحقق...");
-        try
-        {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-            http.DefaultRequestHeaders.UserAgent.ParseAdd("SakhrDictionaryRevive/" + CurrentVersion);
-            http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-            // releases?per_page=1 rather than /latest: our releases are marked pre-release, which /latest skips.
-            using var response = await http.GetAsync("https://api.github.com/repos/MohamedElnaggar00/Sakhr-Dictionary-Revive/releases?per_page=1");
-            response.EnsureSuccessStatusCode();
-            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            string tag = "";
-            foreach (var release in json.RootElement.EnumerateArray())
-            {
-                tag = (release.GetProperty("tag_name").GetString() ?? "").TrimStart('v', 'V');
-                break;
-            }
-            if (Version.TryParse(tag, out var latest) && Version.TryParse(CurrentVersion, out var current) && latest > current)
-            {
-                UpdateResult.Text = Loc.T("Version " + tag + " is available.", "الإصدار " + tag + " متاح.");
-                UpdateLink.NavigateUri = new Uri("https://github.com/MohamedElnaggar00/Sakhr-Dictionary-Revive/releases/tag/v" + tag);
-                UpdateLink.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                UpdateResult.Text = tag.Length > 0
-                    ? Loc.T("You're up to date (v" + CurrentVersion + ").", "أنت على أحدث إصدار (v" + CurrentVersion + ").")
-                    : Loc.T("No releases found yet.", "لا توجد إصدارات بعد.");
-            }
-        }
-        catch
-        {
-            UpdateResult.Text = Loc.T("Couldn't check for updates. Check your internet connection and try again.", "تعذر التحقق من التحديثات. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.");
-        }
-        finally
-        {
-            CheckButton.IsEnabled = true;
-        }
-    }
+
 }
