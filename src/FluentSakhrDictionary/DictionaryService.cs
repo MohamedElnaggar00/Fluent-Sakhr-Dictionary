@@ -239,12 +239,12 @@ public static class DictionaryService
         {
             var list = new List<Entry>();
             for (int i = first; i < _words.Length && _words[i].StartsWith(query, StringComparison.Ordinal) && list.Count < max; i++)
-                if (_entries[i].Found) list.Add(_entries[i]); // skip empty 1996 miss-records
+                list.Add(_entries[i]);
             return list;
         }
         var fallback = new List<Entry>();
         for (int i = 0; i < _words.Length && fallback.Count < max; i++)
-            if (_words[i].Contains(query, StringComparison.Ordinal) && _entries[i].Found) fallback.Add(_entries[i]);
+            if (_words[i].Contains(query, StringComparison.Ordinal)) fallback.Add(_entries[i]);
         return fallback;
     }
 
