@@ -122,7 +122,9 @@ public partial class MainWindow : Window
             "about" => typeof(AboutPage),
             _ => typeof(SearchPage),
         };
-        ContentFrame.Navigate(page, null, new Microsoft.UI.Xaml.Media.Animation.DrillInNavigationTransitionInfo());
+        // No entrance transition: DrillIn froze mid-animation on his machine (v0.4.0 Settings hang),
+        // leaving the page stuck offset with a dead scrollbar.
+        ContentFrame.Navigate(page);
     }
 
     // ---------- accent color (same pattern as Fluent Prayer Times / Fluent Vantage Toolbar) ----------

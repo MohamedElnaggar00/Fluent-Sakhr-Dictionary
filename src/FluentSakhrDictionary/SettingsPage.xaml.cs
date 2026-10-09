@@ -57,9 +57,11 @@ public partial class SettingsPage : Page
         UpdateLink.Content = Loc.T("Open download page", "فتح صفحة التنزيل");
     }
 
+    static bool _applyingLanguage; // re-navigation rebuilds this page; never recurse
     void Language_Changed(object sender, SelectionChangedEventArgs e)
     {
-        if (!_ready) return;
+        if (!_ready || _applyingLanguage) return;
+        _applyingLanguage = true;
         _settings.Language = (LanguagePicker.SelectedItem as RadioButton)?.Tag as string ?? "system";
         _settings.Save();
         Loc.Apply(_settings);
@@ -68,6 +70,7 @@ public partial class SettingsPage : Page
             w.ApplyLanguage();
             w.RefreshCurrentPage();
         }
+        _applyingLanguage = false;
     }
 
     void Wiktionary_Toggled(object sender, RoutedEventArgs e)
