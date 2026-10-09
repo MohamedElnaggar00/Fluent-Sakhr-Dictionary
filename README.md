@@ -36,6 +36,16 @@ dotnet publish src/FluentSakhrDictionary/FluentSakhrDictionary.csproj -c Release
 Requires .NET 8 SDK and the Windows App SDK 1.6 workload. The app runs
 framework-dependent: the Windows App Runtime installer is bundled in setup.
 
+## The original
+
+The box of the original **Sakhr Dictionary, MSX Al-Alamiah edition (1987)** -
+the ancestor of the 1996 Windows version this project revives, and the
+dictionary whole generations grew up with. Photos from the developer's own copy.
+
+| Front | Back |
+| --- | --- |
+| ![Front of the original Sakhr Dictionary box, MSX Al-Alamiah edition 1987](docs/box-front.jpg) | ![Back of the original Sakhr Dictionary box, MSX Al-Alamiah edition 1987](docs/box-back.jpg) |
+
 ## The data
 
 `data/dictionary.jsonl` holds the full extracted dataset: 59,427 records
