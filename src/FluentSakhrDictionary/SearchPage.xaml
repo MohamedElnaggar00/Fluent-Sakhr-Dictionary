@@ -49,7 +49,7 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
                         <TextBlock x:Name="WordTitle" FontSize="34" FontWeight="SemiBold" FlowDirection="RightToLeft" Text="قاموس صخر"/>
-                        <TextBlock x:Name="WordSubtitle" FontSize="13" TextWrapping="Wrap" Margin="0,2,0,18" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Sakhr Dictionary Revive - 59,427 lemmas from the original 1996 Sakhr dictionary, English and Arabic"/>
+                        <TextBlock x:Name="WordSubtitle" FontSize="13" TextWrapping="Wrap" Margin="0,2,0,18" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Sakhr Dictionary Revive - English ⇄ Arabic"/>
                         <ItemsRepeater x:Name="MeaningsRepeater">
                             <ItemsRepeater.ItemTemplate>
                                 <DataTemplate>

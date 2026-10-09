@@ -244,8 +244,8 @@ public partial class SearchPage : Page
     void ResetPane()
     {
         WordTitle.FlowDirection = FlowDirection.RightToLeft;
-        WordTitle.Text = "قاموس صخر";
-        WordSubtitle.Text = "Sakhr Dictionary Revive - 59,427 lemmas from the original 1996 Sakhr dictionary, English and Arabic";
+        WordTitle.Text = "قاموس صخر الحديث";
+        WordSubtitle.Text = "Sakhr Dictionary Revive - English ⇄ Arabic";
         MeaningsRepeater.Visibility = Visibility.Visible;
         MeaningsRepeater.ItemsSource = null;
         EnglishRepeater.ItemsSource = null;
