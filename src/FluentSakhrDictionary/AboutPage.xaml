@@ -15,8 +15,10 @@
                     <TextBlock Text="Sakhr Dictionary Revive" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                     <TextBlock Text="قاموس صخر" FontSize="18" HorizontalAlignment="Center"/>
                     <TextBlock x:Name="VersionText" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
-                    <TextBlock Text="A modern rebirth of the classic 1996 Sakhr English-Arabic dictionary: 59,427 lemmas, 125,896 Arabic meanings with full diacritics, fully offline."
+                    <TextBlock Text="A modern rebirth of the classic 1996 Sakhr English-Arabic dictionary: 59,427 lemmas, 125,896 Arabic meanings with full diacritics."
                                FontSize="13" TextWrapping="Wrap" TextAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock Text="Works fully offline - both databases are bundled inside the app, no internet needed."
+                               FontSize="13" TextWrapping="Wrap" TextAlignment="Center" FontWeight="SemiBold"/>
                 </StackPanel>
             </Border>
 
