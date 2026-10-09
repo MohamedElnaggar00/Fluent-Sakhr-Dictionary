@@ -1,0 +1,61 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'installer/**', '.github/workflows/build.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish (WinUI 3, win-x64, framework-dependent)
+        shell: bash
+        run: |
+          dotnet publish src/FluentSakhrDictionary/FluentSakhrDictionary.csproj -c Release -r win-x64 -p:Platform=x64 --self-contained false \
+            -p:DebugType=none -o publish
+
+      - name: Verify output structure
+        shell: pwsh
+        run: |
+          Get-ChildItem publish | Select-Object Name, Length | Format-Table -AutoSize | Out-String -Width 200
+          $need = @('FluentSakhrDictionary.exe','FluentSakhrDictionary.dll','FluentSakhrDictionary.runtimeconfig.json','app.ico','Microsoft.WinUI.dll','data/dictionary.jsonl')
+          $missing = $need | Where-Object { -not (Test-Path (Join-Path publish $_)) }
+          if ($missing) { Write-Error "Missing: $missing"; exit 1 }
+          if (-not (Get-ChildItem publish -Filter *.pri)) { Write-Error "No .pri resource file"; exit 1 }
+          Write-Host "Structure OK"
+
+      - name: Smoke test (install Windows App Runtime, launch for 10s)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://aka.ms/windowsappsdk/1.6/latest/windowsappruntimeinstall-x64.exe -OutFile wari.exe
+          Start-Process .\wari.exe -ArgumentList '--quiet' -Wait
+          $p = Start-Process publish\FluentSakhrDictionary.exe -PassThru
+          Start-Sleep -Seconds 10
+          if ($p.HasExited) { Write-Error "App exited early with code $($p.ExitCode)"; if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; exit 1 }
+          Write-Host "App still running after 10s"
+          Stop-Process -Id $p.Id -Force
+
+      - name: Capture app screenshot (CAT lookup, light + dark)
+        shell: pwsh
+        run: |
+          $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-light.png",'--shot-word','CAT' -PassThru -Wait
+          if (-not (Test-Path app-light.png)) { Write-Error "Light screenshot missing"; exit 1 }
+          $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-dark.png",'--shot-word','CAT','--theme','Dark' -PassThru -Wait
+          if (-not (Test-Path app-dark.png)) { Write-Error "Dark screenshot missing"; exit 1 }
+          Write-Host "Screenshots captured"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: |
+            publish
+            app-light.png
+            app-dark.png

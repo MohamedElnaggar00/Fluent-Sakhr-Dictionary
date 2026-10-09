@@ -1,0 +1,126 @@
+name: Build and Release
+
+# Build a new release:
+#   1) push a tag:      git tag v0.1.0 && git push origin v0.1.0
+#   2) or run manually: Actions > Build and Release > Run workflow (enter a version like 0.1.0)
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number, e.g. 0.1.0 (a tag vX.Y.Z will be created)'
+        required: true
+        default: '0.1.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Resolve version
+        id: v
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then VER="${{ github.event.inputs.version }}"; else VER="${GITHUB_REF_NAME#v}"; fi
+          VER="${VER#v}"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Publish (WinUI 3, win-x64, framework-dependent)
+        shell: bash
+        run: |
+          dotnet publish src/FluentSakhrDictionary/FluentSakhrDictionary.csproj -c Release -r win-x64 -p:Platform=x64 --self-contained false \
+            -p:DebugType=none -p:Version=${{ steps.v.outputs.version }} \
+            -p:AssemblyVersion=${{ steps.v.outputs.version }}.0 -p:FileVersion=${{ steps.v.outputs.version }}.0 \
+            -o publish
+
+      - name: Verify output structure
+        shell: pwsh
+        run: |
+          $need = @('FluentSakhrDictionary.exe','FluentSakhrDictionary.dll','FluentSakhrDictionary.runtimeconfig.json','app.ico','Microsoft.WinUI.dll','data/dictionary.jsonl')
+          $missing = $need | Where-Object { -not (Test-Path (Join-Path publish $_)) }
+          if ($missing) { Write-Error "Missing: $missing"; exit 1 }
+          if (-not (Get-ChildItem publish -Filter *.pri)) { Write-Error "No .pri resource file"; exit 1 }
+          Write-Host "Structure OK"
+
+      - name: Smoke test (install Windows App Runtime, launch for 10s)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://aka.ms/windowsappsdk/1.6/latest/windowsappruntimeinstall-x64.exe -OutFile wari.exe
+          Start-Process .\wari.exe -ArgumentList '--quiet' -Wait
+          $p = Start-Process publish\FluentSakhrDictionary.exe -PassThru
+          Start-Sleep -Seconds 10
+          if ($p.HasExited) { Write-Error "App exited early with code $($p.ExitCode)"; exit 1 }
+          Stop-Process -Id $p.Id -Force
+
+      - name: Capture app screenshot (CAT lookup)
+        shell: pwsh
+        run: |
+          $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-light.png",'--shot-word','CAT' -PassThru -Wait
+          if (-not (Test-Path app-light.png)) { Write-Error "Screenshot missing"; exit 1 }
+
+      - name: Package portable zip
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.v.outputs.version }}"
+          $dir = "FluentSakhrDictionary-v$ver"
+          New-Item -ItemType Directory -Path $dir | Out-Null
+          Copy-Item publish\* $dir -Recurse
+          Copy-Item release/README.txt "$dir/README.txt"
+          Compress-Archive -Path $dir -DestinationPath "FluentSakhrDictionary-v$ver-portable-win-x64.zip"
+
+      - name: Build self-contained installer
+        shell: pwsh
+        run: |
+          Compress-Archive -Path publish\* -DestinationPath installer/payload.zip
+          dotnet publish installer/Installer.csproj -c Release -r win-x64 --self-contained true -p:DebugType=none -o setup
+          Copy-Item setup/FluentSakhrDictionary-Setup.exe "FluentSakhrDictionary-v${{ steps.v.outputs.version }}-installer-win-x64.exe"
+
+      - name: Build .NET-runtime-dependent installer
+        shell: pwsh
+        run: |
+          dotnet publish installer/Installer.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:DebugType=none -o setup-rd
+          Copy-Item setup-rd/FluentSakhrDictionary-Setup.exe "FluentSakhrDictionary-v${{ steps.v.outputs.version }}-installer-.NET-runtime-dependent-win-x64.exe"
+          if ((Get-Item setup-rd/FluentSakhrDictionary-Setup.exe).Length -gt 25MB) { throw 'Unexpectedly large runtime-dependent installer' }
+
+      - name: Verify installer and capture setup UI
+        shell: pwsh
+        run: |
+          $p = Start-Process setup/FluentSakhrDictionary-Setup.exe -ArgumentList '--preview',"$PWD/installer-screen.png" -PassThru -Wait
+          if ($p.ExitCode -ne 0 -or -not (Test-Path installer-screen.png)) { throw "Installer render failed" }
+          $p = Start-Process setup/FluentSakhrDictionary-Setup.exe -ArgumentList '--verify-install' -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw "Installer integration test failed: $($p.ExitCode)" }
+          $exe = Join-Path $env:ProgramFiles 'FluentSakhrDictionary/FluentSakhrDictionary.exe'
+          if (-not (Test-Path $exe)) { throw "Installed executable missing" }
+          if (-not (Test-Path "$env:ProgramData/Microsoft/Windows/Start Menu/Programs/Fluent Sakhr Dictionary.lnk")) { throw "Start menu shortcut missing" }
+          $p = Start-Process $exe -PassThru
+          Start-Sleep -Seconds 10
+          if ($p.HasExited) { throw "Installed application exited early" }
+          Stop-Process -Id $p.Id -Force
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-verified
+          path: |
+            installer-screen.png
+            app-light.png
+
+      - name: Create pre-release with the three assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER="${{ steps.v.outputs.version }}"
+          gh release create "v$VER" --prerelease --title "Fluent Sakhr Dictionary v$VER" \
+            --notes "Modern WinUI 3 rebirth of the 1996 Sakhr English-Arabic dictionary. 59,427 lemmas, fully offline. brought to you by app.instinct AI" \
+            "FluentSakhrDictionary-v$VER-portable-win-x64.zip" \
+            "FluentSakhrDictionary-v$VER-installer-win-x64.exe" \
+            "FluentSakhrDictionary-v$VER-installer-.NET-runtime-dependent-win-x64.exe"

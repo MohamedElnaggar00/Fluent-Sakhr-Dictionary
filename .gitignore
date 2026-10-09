@@ -1,17 +1,7 @@
-# Visual Studio / WinUI build output
-[Bb]in/
-[Oo]bj/
-[Dd]ebug/
-[Rr]elease/
-x64/
-x86/
-ARM64/
+publish/
+setup/
+setup-rd/
+installer/payload.zip
 *.user
-*.suo
-.vs/
-AppPackages/
-BundleArtifacts/
-*.appx
-*.msix
-*.cer
-*.pfx
+bin/
+obj/
