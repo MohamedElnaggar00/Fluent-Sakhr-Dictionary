@@ -43,6 +43,22 @@ public class WinD {
   public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr w, IntPtr l, uint flags, uint timeout, out IntPtr result);
   [DllImport("user32.dll", EntryPoint="SendMessageTimeoutA")]
   public static extern IntPtr SendMessageTimeoutA(IntPtr h, uint msg, IntPtr w, byte[] l, uint flags, uint timeout, out IntPtr result);
+  [DllImport("kernel32.dll")] public static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
+  [DllImport("kernel32.dll")] public static extern bool CloseHandle(IntPtr h);
+  [DllImport("kernel32.dll")] public static extern bool ReadProcessMemory(IntPtr proc, IntPtr addr, byte[] buf, IntPtr size, out IntPtr read);
+  public static IntPtr OpenProc(int pid) { return OpenProcess(0x0410, false, (uint)pid); }
+  public static IntPtr GetItemData(IntPtr lb, int i) {
+    IntPtr r;
+    SendMessageTimeout(lb, 0x0199, (IntPtr)i, IntPtr.Zero, SMTO_ABORTIFHUNG, 3000, out r); // LB_GETITEMDATA
+    return r;
+  }
+  public static byte[] ReadMem(IntPtr hProc, IntPtr addr, int size) {
+    if (hProc == IntPtr.Zero) return null;
+    byte[] buf = new byte[size]; IntPtr read;
+    if (!ReadProcessMemory(hProc, addr, buf, (IntPtr)size, out read) || read.ToInt64() <= 0) return null;
+    if (read.ToInt64() < size) Array.Resize(ref buf, (int)read.ToInt64());
+    return buf;
+  }
 
   public const uint SMTO_ABORTIFHUNG = 0x0002;
   public const uint WM_SETTEXT = 0x000C;
@@ -108,9 +124,17 @@ public class WinD {
 }
 '@
 Add-Type -TypeDefinition $cs -ReferencedAssemblies System.Windows.Forms
+if (-not ([System.Management.Automation.PSTypeName]'WinD').Type) { Write-Host "FATAL: WinD compile failed"; exit 1 }
 
 $cp1256 = [Text.Encoding]::GetEncoding(1256)
 function Decode1256([byte[]]$b) { if ($null -eq $b) { return $null }; return $cp1256.GetString($b) }
+# meaning records: CP1256 bytes from offset 0, terminated by 0xFE (or NUL)
+function Extract-Cp1256([byte[]]$mem) {
+  $len = 0
+  while ($len -lt $mem.Length -and $mem[$len] -ne 0xFE -and $mem[$len] -ne 0) { $len++ }
+  if ($len -eq 0) { return '' }
+  return $cp1256.GetString($mem, 0, $len).Trim()
+}
 
 # --- unpack + ASCII copy ----------------------------------------------------
 $sevenZip = "C:\Program Files\7-Zip\7z.exe"
@@ -182,6 +206,13 @@ function Launch-App {
   return $null
 }
 
+$script:hProc = [IntPtr]::Zero
+function Open-ProcHandle {
+  if ($script:hProc -ne [IntPtr]::Zero) { try { [WinD]::CloseHandle($script:hProc) } catch {} }
+  $script:hProc = [WinD]::OpenProc($script:proc.Id)
+  Log "proc handle: 0x$($script:hProc.ToInt64().ToString('X')) pid=$($script:proc.Id)"
+}
+
 # --- main loop ---------------------------------------------------------------
 $ui = Launch-App
 if (-not $ui -or $ui.edit -eq [IntPtr]::Zero) { Log "FATAL: app UI not found"; exit 1 }
@@ -194,6 +225,7 @@ Log "UI ready: dlg=0x$($ui.dlg.ToInt64().ToString('X')) edit=0x$($ui.edit.ToInt6
 [WinD]::SetForegroundWindow($ui.dlg) | Out-Null
 Start-Sleep -Seconds 12
 Log "dialog shown + foregrounded, engine settle wait done"
+Open-ProcHandle
 
 # wait for the dictionary engine: trigger ONE lookup, then wait quietly.
 # (spamming SetText/Click every 500ms appears to keep the engine from ever
@@ -235,6 +267,7 @@ foreach ($w in $words) {
       Dismiss-Modals $script:proc.Id
       $ui = Launch-App
       if (-not $ui) { Log "FATAL: relaunch failed"; break }
+      Open-ProcHandle
       $failStreak = 0
     }
     continue
@@ -250,20 +283,25 @@ foreach ($w in $words) {
     if ($c -eq $lastCount) { $stable++; if ($stable -ge 2) { break } } else { $stable = 0; $lastCount = $c }
   }
 
-  # matched lemma from the word listbox current selection
+  # matched lemma from the word listbox current selection (owner-drawn: item data is a record pointer)
   $match = ''
   $sel = [WinD]::LbCurSel($ui.lbWord, [ref]$okSel)
   if ($okSel -and $sel -ge 0) {
-    $mb = [WinD]::LbTextA($ui.lbWord, $sel)
-    if ($null -ne $mb) { $match = (Decode1256 $mb) }
+    $wptr = [WinD]::GetItemData($ui.lbWord, $sel)
+    if ($wptr.ToInt64() -gt 0) {
+      $wmem = [WinD]::ReadMem($script:hProc, $wptr, 128)
+      if ($null -ne $wmem) { $match = Extract-Cp1256 $wmem }
+    }
   }
 
   $meanings = @()
   $mc = [WinD]::LbCount($ui.lbMean, [ref]$okMC)
   if ($okMC -and $mc -gt 0) {
     for ($i = 0; $i -lt $mc; $i++) {
-      $b = [WinD]::LbTextA($ui.lbMean, $i)
-      if ($null -eq $b) { $meanings += $null } else { $meanings += (Decode1256 $b) }
+      $ptr = [WinD]::GetItemData($ui.lbMean, $i)
+      if ($ptr.ToInt64() -le 0) { continue }
+      $mem = [WinD]::ReadMem($script:hProc, $ptr, 512)
+      if ($null -eq $mem) { $meanings += $null } else { $meanings += (Extract-Cp1256 $mem) }
     }
   }
 
@@ -275,5 +313,6 @@ foreach ($w in $words) {
 $sw.Flush(); $sw.Close()
 Log "dump done: $done records -> $outPath"
 
+try { if ($script:hProc -ne [IntPtr]::Zero) { [WinD]::CloseHandle($script:hProc) } } catch {}
 try { if (-not $script:proc.HasExited) { $script:proc.Kill() } } catch {}
 Log "all done"
