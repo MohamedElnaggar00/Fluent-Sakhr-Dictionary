@@ -1,23 +1,27 @@
-# Fluent Sakhr Dictionary
+<p dir="rtl" align="right"><b>قاموس صخر الحديث</b></p>
 
-The classic Sakhr Dictionary (قاموس صخر) rebuilt as a modern Windows app:
-native WinUI 3, Mica, instant search, full RTL support - the same design DNA
-as Fluent Prayer Times and Fluent Vantage Toolbar.
+# Sakhr Dictionary Revive
+
+The classic Sakhr Dictionary reborn as a modern Windows app: native WinUI 3,
+Mica, instant search in both directions, full RTL support - the same design
+DNA as Fluent Prayer Times and Fluent Vantage Toolbar.
 
 ## The app
 
 - WinUI 3, native Fluent: Mica backdrop, smooth animations, light/dark theme
-- Instant prefix search over all 59,427 lemmas, fully offline
+- Instant prefix search over all 59,427 English lemmas, fully offline
 - 125,896 Arabic meanings with full diacritics, rendered correctly
   (the original 1996 program could not even display them properly)
-- Two-pane layout echoing the original: live word list on the left,
-  red Arabic meanings (RTL) on the right
+- Arabic -> English: 36,627 Arabic entries from English Wiktionary, with the
+  1996 Sakhr data as a labeled supplement - never interleaved
+- Equal two-pane layout: live word list on the left, meanings (RTL) on the right
+- Customizable accent color (default teal #00A6A6), manual update check
 - English interface with formal Arabic content
 
 ### Download
 
 Grab the latest release:
-[Releases](https://github.com/MohamedElnaggar00/Fluent-Sakhr-Dictionary/releases)
+[Releases](https://github.com/MohamedElnaggar00/Sakhr-Dictionary-Revive/releases)
 
 Three flavors: setup (recommended), portable zip, and a small
 .NET-runtime-dependent installer.

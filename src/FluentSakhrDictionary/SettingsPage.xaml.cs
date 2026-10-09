@@ -76,7 +76,6 @@ public partial class SettingsPage : Page
             DefaultButton = ContentDialogButton.Close,
         };
         try { await dialog.ShowAsync(); } catch { }
-        _settings = Settings.Load();
     }
 
     void AccentReset_Click(object sender, RoutedEventArgs e)
@@ -95,10 +94,10 @@ public partial class SettingsPage : Page
         try
         {
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-            http.DefaultRequestHeaders.UserAgent.ParseAdd("FluentSakhrDictionary/" + CurrentVersion);
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("SakhrDictionaryRevive/" + CurrentVersion);
             http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
             // releases?per_page=1 rather than /latest: our releases are marked pre-release, which /latest skips.
-            using var response = await http.GetAsync("https://api.github.com/repos/MohamedElnaggar00/Fluent-Sakhr-Dictionary/releases?per_page=1");
+            using var response = await http.GetAsync("https://api.github.com/repos/MohamedElnaggar00/Sakhr-Dictionary-Revive/releases?per_page=1");
             response.EnsureSuccessStatusCode();
             using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             string tag = "";
@@ -110,7 +109,7 @@ public partial class SettingsPage : Page
             if (Version.TryParse(tag, out var latest) && Version.TryParse(CurrentVersion, out var current) && latest > current)
             {
                 UpdateResult.Text = "Version " + tag + " is available.";
-                UpdateLink.NavigateUri = new Uri("https://github.com/MohamedElnaggar00/Fluent-Sakhr-Dictionary/releases/tag/v" + tag);
+                UpdateLink.NavigateUri = new Uri("https://github.com/MohamedElnaggar00/Sakhr-Dictionary-Revive/releases/tag/v" + tag);
                 UpdateLink.Visibility = Visibility.Visible;
             }
             else

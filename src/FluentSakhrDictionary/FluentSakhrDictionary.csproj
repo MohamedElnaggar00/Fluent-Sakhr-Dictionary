@@ -4,7 +4,7 @@
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>FluentSakhrDictionary</RootNamespace>
-    <AssemblyName>FluentSakhrDictionary</AssemblyName>
+    <AssemblyName>SakhrDictionaryRevive</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x64</Platforms>
     <PlatformTarget>x64</PlatformTarget>
@@ -18,10 +18,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <Version>0.1.0</Version>
-    <Product>Fluent Sakhr Dictionary</Product>
+    <Product>Sakhr Dictionary Revive</Product>
     <Company>Mohamed Elnaggar</Company>
     <Authors>Mohamed Elnaggar</Authors>
-    <Description>Fluent Sakhr Dictionary - قاموس صخر</Description>
+    <Description>Sakhr Dictionary Revive - قاموس صخر الحديث</Description>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup>

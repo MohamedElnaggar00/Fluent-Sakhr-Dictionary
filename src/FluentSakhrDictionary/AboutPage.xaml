@@ -12,7 +12,7 @@
                     BorderThickness="1">
                 <StackPanel Spacing="10" HorizontalAlignment="Center">
                     <Image Source="/app.ico" Width="96" Height="96"/>
-                    <TextBlock Text="Fluent Sakhr Dictionary" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Sakhr Dictionary Revive" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                     <TextBlock Text="قاموس صخر" FontSize="18" HorizontalAlignment="Center"/>
                     <TextBlock x:Name="VersionText" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="A modern rebirth of the classic 1996 Sakhr English-Arabic dictionary: 59,427 lemmas, 125,896 Arabic meanings with full diacritics, fully offline."
@@ -31,8 +31,8 @@
                     <TextBlock Text="License: MIT" FontSize="13"/>
                     <TextBlock Text="English-Arabic data: the original 1996 Sakhr dictionary" FontSize="13"/>
                     <TextBlock Text="Arabic-English data: English Wiktionary via kaikki.org (wiktextract), CC BY-SA 4.0" FontSize="13" TextWrapping="Wrap"/>
-                    <HyperlinkButton Content="github.com/MohamedElnaggar00/Fluent-Sakhr-Dictionary"
-                                     NavigateUri="https://github.com/MohamedElnaggar00/Fluent-Sakhr-Dictionary"
+                    <HyperlinkButton Content="github.com/MohamedElnaggar00/Sakhr-Dictionary-Revive"
+                                     NavigateUri="https://github.com/MohamedElnaggar00/Sakhr-Dictionary-Revive"
                                      FontSize="13" Padding="0"/>
                 </StackPanel>
             </Border>

@@ -14,7 +14,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Image Source="app.ico" Width="20" Height="20" Margin="12,0,8,0" VerticalAlignment="Center"/>
-            <TextBlock Grid.Column="1" Text="Fluent Sakhr Dictionary" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}"/>
+            <TextBlock Grid.Column="1" Text="Sakhr Dictionary Revive" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}"/>
         </Grid>
 
         <NavigationView x:Name="Nav" Grid.Row="1"

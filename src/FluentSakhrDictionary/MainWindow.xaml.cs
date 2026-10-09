@@ -13,7 +13,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         _settings = Settings.Load();
-        Title = "Fluent Sakhr Dictionary";
+        Title = "Sakhr Dictionary Revive";
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         AppWindow.Resize(new Windows.Graphics.SizeInt32(1200, 700));

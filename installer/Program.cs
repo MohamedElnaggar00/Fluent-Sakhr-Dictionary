@@ -15,18 +15,18 @@ namespace FluentSakhrDictionarySetup;
 
 static class Program
 {
-    const string Product = "Fluent Sakhr Dictionary";
+    const string Product = "Sakhr Dictionary Revive";
     const string Version = "0.1.0";
-    static string Target => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "FluentSakhrDictionary");
+    static string Target => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "SakhrDictionaryRevive");
     static readonly HttpClient Http = new() { Timeout = TimeSpan.FromMinutes(15) };
     [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int a, ref int v, int s);
     [STAThread] static void Main(string[] args)
     {
         if (args.Contains("--uninstall"))
         {
-            if (MessageBox.Show("Remove Fluent Sakhr Dictionary? Your personal settings stay untouched.", Product, MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
+            if (MessageBox.Show("Remove Sakhr Dictionary Revive? Your personal settings stay untouched.", Product, MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
             // Run the removal from a temporary copy so the installed executable is not locked.
-            string copy = Path.Combine(Path.GetTempPath(), "FluentSakhrDictionary-Uninstall-" + Guid.NewGuid() + ".exe");
+            string copy = Path.Combine(Path.GetTempPath(), "SakhrDictionaryRevive-Uninstall-" + Guid.NewGuid() + ".exe");
             File.Copy(Environment.ProcessPath!, copy);
             Process.Start(new ProcessStartInfo(copy, "--remove") { UseShellExecute = true });
             return;
@@ -41,8 +41,8 @@ static class Program
                 if (File.Exists(shortcut)) File.Delete(shortcut);
                 string desk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), Product + ".lnk");
                 if (File.Exists(desk)) File.Delete(desk);
-                Registry.LocalMachine.DeleteSubKeyTree(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\FluentSakhrDictionary", false);
-                MessageBox.Show("Fluent Sakhr Dictionary was removed. Your personal settings were kept.", Product);
+                Registry.LocalMachine.DeleteSubKeyTree(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\SakhrDictionaryRevive", false);
+                MessageBox.Show("Sakhr Dictionary Revive was removed. Your personal settings were kept.", Product);
             }
             catch (Exception e) { MessageBox.Show("Could not remove: " + e.Message, Product); }
             return;
@@ -55,7 +55,7 @@ static class Program
         panel.Children.Add(new TextBlock { Text = "About", FontSize = 24, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0,0,0,18) });
         var about = new StackPanel { Margin = new Thickness(20), HorizontalAlignment = HorizontalAlignment.Center };
         about.Children.Add(new Border { Width = 104, Height = 104, CornerRadius = new CornerRadius(18), Background = new SolidColorBrush(Color.FromRgb(0,166,166)), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0,0,0,14), Child = new Image { Width = 72, Height = 72, Source = new BitmapImage(new Uri("pack://application:,,,/logo.png")) } });
-        about.Children.Add(Text("Fluent Sakhr Dictionary", 24));
+        about.Children.Add(Text("Sakhr Dictionary Revive", 24));
         about.Children.Add(Text("قاموس صخر", 16));
         about.Children.Add(Text("Version " + Version, 14));
         about.Children.Add(Text("brought to you by app.instinct AI", 14));
@@ -106,10 +106,10 @@ static class Program
     /// <summary>Starts the installed app de-elevated (through Explorer) so it does not run as administrator.</summary>
     static void LaunchApp()
     {
-        try { Process.Start(new ProcessStartInfo("explorer.exe", "\"" + Path.Combine(Target, "FluentSakhrDictionary.exe") + "\"") { UseShellExecute = true }); } catch { }
+        try { Process.Start(new ProcessStartInfo("explorer.exe", "\"" + Path.Combine(Target, "SakhrDictionaryRevive.exe") + "\"") { UseShellExecute = true }); } catch { }
     }
     static TextBlock Text(string text, double size) => new() { Text = text, FontSize = size, TextAlignment = TextAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0,4,0,4) };
-    static void StopApp() { foreach (var p in Process.GetProcessesByName("FluentSakhrDictionary")) { p.Kill(); p.WaitForExit(10000); p.Dispose(); } }
+    static void StopApp() { foreach (var p in Process.GetProcessesByName("SakhrDictionaryRevive")) { p.Kill(); p.WaitForExit(10000); p.Dispose(); } }
     static string Run(string exe, string arguments)
     {
         using var p = Process.Start(new ProcessStartInfo(exe, arguments) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true })!;
@@ -127,7 +127,7 @@ static class Program
     static bool WarPresent() => Run("powershell.exe", "-NoProfile -NonInteractive -Command \"[bool](Get-AppxPackage -Name Microsoft.WindowsAppRuntime.1.6 | Where-Object { $_.Architecture -eq 'X64' -and $_.Status -eq 'Ok' })\"").Trim().Equals("True", StringComparison.OrdinalIgnoreCase);
     static void Dependency(string url, string arguments)
     {
-        string file = Path.Combine(Path.GetTempPath(), "FluentSakhrDictionary-" + Guid.NewGuid() + ".exe");
+        string file = Path.Combine(Path.GetTempPath(), "SakhrDictionaryRevive-" + Guid.NewGuid() + ".exe");
         try
         {
             using (var source = Http.GetStreamAsync(url).GetAwaiter().GetResult()) using (var dest = File.Create(file)) source.CopyTo(dest);
@@ -153,10 +153,10 @@ static class Program
         File.Copy(Environment.ProcessPath!, Path.Combine(Target, "Uninstall.exe"), true);
         string shortcut = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), Product + ".lnk");
         string escaped = Target.Replace("'", "''");
-        Run("powershell.exe", "-NoProfile -NonInteractive -Command \"$s=(New-Object -ComObject WScript.Shell).CreateShortcut('" + shortcut.Replace("'", "''") + "');$s.TargetPath='" + escaped + "\\FluentSakhrDictionary.exe';$s.WorkingDirectory='" + escaped + "';$s.IconLocation='" + escaped + "\\app.ico';$s.Save()\"");
+        Run("powershell.exe", "-NoProfile -NonInteractive -Command \"$s=(New-Object -ComObject WScript.Shell).CreateShortcut('" + shortcut.Replace("'", "''") + "');$s.TargetPath='" + escaped + "\\SakhrDictionaryRevive.exe';$s.WorkingDirectory='" + escaped + "';$s.IconLocation='" + escaped + "\\app.ico';$s.Save()\"");
         string desktop = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), Product + ".lnk");
-        Run("powershell.exe", "-NoProfile -NonInteractive -Command \"$s=(New-Object -ComObject WScript.Shell).CreateShortcut('" + desktop.Replace("'", "''") + "');$s.TargetPath='" + escaped + "\\FluentSakhrDictionary.exe';$s.WorkingDirectory='" + escaped + "';$s.IconLocation='" + escaped + "\\app.ico';$s.Save()\"");
-        using var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\FluentSakhrDictionary");
+        Run("powershell.exe", "-NoProfile -NonInteractive -Command \"$s=(New-Object -ComObject WScript.Shell).CreateShortcut('" + desktop.Replace("'", "''") + "');$s.TargetPath='" + escaped + "\\SakhrDictionaryRevive.exe';$s.WorkingDirectory='" + escaped + "';$s.IconLocation='" + escaped + "\\app.ico';$s.Save()\"");
+        using var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\SakhrDictionaryRevive");
         key.SetValue("DisplayName", Product); key.SetValue("DisplayVersion", Version); key.SetValue("Publisher", "Mohamed Elnaggar"); key.SetValue("InstallLocation", Target);
         key.SetValue("DisplayIcon", Path.Combine(Target, "app.ico")); key.SetValue("UninstallString", "\"" + Path.Combine(Target, "Uninstall.exe") + "\" --uninstall");
         key.SetValue("NoModify", 1); key.SetValue("NoRepair", 1);

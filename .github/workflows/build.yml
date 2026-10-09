@@ -37,7 +37,7 @@ jobs:
         shell: pwsh
         run: |
           Get-ChildItem publish | Select-Object Name, Length | Format-Table -AutoSize | Out-String -Width 200
-          $need = @('FluentSakhrDictionary.exe','FluentSakhrDictionary.dll','FluentSakhrDictionary.runtimeconfig.json','app.ico','Microsoft.WinUI.dll','data/dictionary.jsonl')
+          $need = @('SakhrDictionaryRevive.exe','SakhrDictionaryRevive.dll','SakhrDictionaryRevive.runtimeconfig.json','app.ico','Microsoft.WinUI.dll','data/dictionary.jsonl')
           $missing = $need | Where-Object { -not (Test-Path (Join-Path publish $_)) }
           if ($missing) { Write-Error "Missing: $missing"; exit 1 }
           if (-not (Get-ChildItem publish -Filter *.pri)) { Write-Error "No .pri resource file"; exit 1 }
@@ -48,23 +48,23 @@ jobs:
         run: |
           Invoke-WebRequest https://aka.ms/windowsappsdk/1.6/latest/windowsappruntimeinstall-x64.exe -OutFile wari.exe
           Start-Process .\wari.exe -ArgumentList '--quiet' -Wait
-          $p = Start-Process publish\FluentSakhrDictionary.exe -PassThru
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -PassThru
           Start-Sleep -Seconds 10
-          if ($p.HasExited) { Write-Error "App exited early with code $($p.ExitCode)"; if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; exit 1 }
+          if ($p.HasExited) { Write-Error "App exited early with code $($p.ExitCode)"; if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; exit 1 }
           Write-Host "App still running after 10s"
           Stop-Process -Id $p.Id -Force
 
       - name: Capture app screenshots (CAT light + dark, Arabic قط)
         shell: pwsh
         run: |
-          $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-light.png",'--shot-word','CAT' -PassThru -Wait
-          if (-not (Test-Path app-light.png)) { if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; Write-Error "Light screenshot missing"; exit 1 }
-          $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-dark.png",'--shot-word','CAT','--theme','Dark' -PassThru -Wait
-          if (-not (Test-Path app-dark.png)) { if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; Write-Error "Dark screenshot missing"; exit 1 }
-          $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-arabic.png",'--shot-word','قط' -PassThru -Wait
-          if (-not (Test-Path app-arabic.png)) { if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; Write-Error "Arabic screenshot missing"; exit 1 }
-          $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-settings.png",'--shot-page','settings' -PassThru -Wait
-          if (-not (Test-Path app-settings.png)) { if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; Write-Error "Settings screenshot missing"; exit 1 }
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-light.png",'--shot-word','CAT' -PassThru -Wait
+          if (-not (Test-Path app-light.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Light screenshot missing"; exit 1 }
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-dark.png",'--shot-word','CAT','--theme','Dark' -PassThru -Wait
+          if (-not (Test-Path app-dark.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Dark screenshot missing"; exit 1 }
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-arabic.png",'--shot-word','قط' -PassThru -Wait
+          if (-not (Test-Path app-arabic.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Arabic screenshot missing"; exit 1 }
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-settings.png",'--shot-page','settings' -PassThru -Wait
+          if (-not (Test-Path app-settings.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Settings screenshot missing"; exit 1 }
           Write-Host "Screenshots captured"
 
       - uses: actions/upload-artifact@v4

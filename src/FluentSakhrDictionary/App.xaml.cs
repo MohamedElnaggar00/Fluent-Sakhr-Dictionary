@@ -4,7 +4,7 @@ namespace FluentSakhrDictionary;
 
 public partial class App : Application
 {
-    public static string AppData => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FluentSakhrDictionary");
+    public static string AppData => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SakhrDictionaryRevive");
     public static MainWindow? Main;
     /// <summary>CI-only: --screenshot=path [--shot-word=CAT] [--theme=Dark] renders the app and exits.</summary>
     public static string? ScreenshotPath, ShotWord, ShotTheme, ShotPage;
@@ -35,7 +35,7 @@ public partial class App : Application
             if (a.StartsWith("--shot-page=")) ShotPage = a[12..];
             else if (a == "--shot-page" && i + 1 < argv.Length) ShotPage = argv[++i];
         }
-        _mutex = new Mutex(true, "FluentSakhrDictionary.SingleInstance", out bool created);
+        _mutex = new Mutex(true, "SakhrDictionaryRevive.SingleInstance", out bool created);
         if (!created) { Environment.Exit(0); return; }
         _window = new MainWindow();
         Main = _window;
