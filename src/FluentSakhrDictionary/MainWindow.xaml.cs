@@ -81,6 +81,9 @@ public partial class MainWindow : Window
             await Task.Delay(1500);
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             Log("hwnd=" + hwnd);
+            // WS_EX_LAYOUTRTL mirrors the capture DC itself (mirrored-glyph screenshots); drop it for
+            // the capture only - the real on-screen mirror is unaffected and this process exits right after.
+            try { WindowChrome.SetRtlMirror(hwnd, false); await Task.Delay(250); } catch { }
             CaptureHelper.Save(hwnd, App.ScreenshotPath!);
             Log("saved");
         }
