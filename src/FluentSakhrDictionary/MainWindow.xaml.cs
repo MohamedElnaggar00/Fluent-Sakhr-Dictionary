@@ -34,6 +34,15 @@ public partial class MainWindow : Window
         ContentFrame.Navigate(typeof(SearchPage));
         Activated += (_, _) =>
         {
+            // DWM attributes can be reset by DPI changes and restore/maximize transitions;
+            // reapply the border suppression and RTL mirror so the frame stays clean.
+            try
+            {
+                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                WindowChrome.Apply(hwnd);
+                WindowChrome.SetRtlMirror(hwnd, Loc.IsArabic);
+            }
+            catch { }
             if (ContentFrame.Content is SearchPage sp) sp.FocusSearchBox();
         };
         if (App.ScreenshotPath != null) RunScreenshot();
