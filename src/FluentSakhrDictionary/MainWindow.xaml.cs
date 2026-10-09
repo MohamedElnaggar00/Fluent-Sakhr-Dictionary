@@ -44,6 +44,7 @@ public partial class MainWindow : Window
     public void ApplyLanguage()
     {
         Root.FlowDirection = Loc.IsArabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+        try { WindowChrome.SetRtlMirror(WinRT.Interop.WindowNative.GetWindowHandle(this), Loc.IsArabic); } catch { }
         NavSearch.Content = Loc.T("Search", "بحث");
         NavSettings.Content = Loc.T("Settings", "الإعدادات");
         NavAbout.Content = Loc.T("About", "حول");

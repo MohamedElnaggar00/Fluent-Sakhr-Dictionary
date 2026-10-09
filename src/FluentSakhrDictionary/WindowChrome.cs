@@ -6,6 +6,24 @@ namespace FluentSakhrDictionary;
 static class WindowChrome
 {
     [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int val, int size);
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] static extern IntPtr GetWindowLongPtr(IntPtr h, int i);
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] static extern IntPtr SetWindowLongPtr(IntPtr h, int i, IntPtr v);
+
+    const int GWL_EXSTYLE = -20;
+    const long WS_EX_LAYOUTRTL = 0x00400000L;
+
+    /// <summary>Mirrors the window frame for Arabic so the caption buttons move to the left.
+    /// XAML content mirrors via FlowDirection; this covers the DWM-drawn min/max/close buttons.</summary>
+    public static void SetRtlMirror(IntPtr hwnd, bool rtl)
+    {
+        try
+        {
+            long ex = GetWindowLongPtr(hwnd, GWL_EXSTYLE).ToInt64();
+            ex = rtl ? (ex | WS_EX_LAYOUTRTL) : (ex & ~WS_EX_LAYOUTRTL);
+            SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(ex));
+        }
+        catch { }
+    }
 
     public static void Apply(IntPtr hwnd)
     {
