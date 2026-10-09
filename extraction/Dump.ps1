@@ -192,22 +192,22 @@ Log "UI ready: dlg=0x$($ui.dlg.ToInt64().ToString('X')) edit=0x$($ui.edit.ToInt6
 [WinD]::ShowWindowAsync($ui.dlg, 9) | Out-Null  # SW_RESTORE
 [WinD]::ShowWindowAsync($ui.dlg, 5) | Out-Null  # SW_SHOW
 [WinD]::SetForegroundWindow($ui.dlg) | Out-Null
-Start-Sleep -Seconds 2
-Log "dialog shown + foregrounded"
+Start-Sleep -Seconds 12
+Log "dialog shown + foregrounded, engine settle wait done"
 
 # wait for the dictionary engine: trigger ONE lookup, then wait quietly.
 # (spamming SetText/Click every 500ms appears to keep the engine from ever
 # finishing its lazy data load)
 $ready = $false
 for ($attempt = 0; $attempt -lt 4 -and -not $ready; $attempt++) {
-  $okS = [WinD]::SetText($ui.edit, 'CAT')
+  $okS = [WinD]::SetText($ui.edit, 'cat')
   Start-Sleep -Milliseconds 300
   $okC = [WinD]::Click($ui.btn)
   Log "readiness attempt $attempt`: set=$okS click=$okC - waiting quietly"
   for ($i = 0; $i -lt 45; $i++) {
     Start-Sleep -Seconds 1
     $c = [WinD]::LbCount($ui.lbMean, [ref]$okR)
-    if ($okR -and $c -gt 0) { $ready = $true; Log "engine ready (CAT -> $c meanings)"; break }
+    if ($okR -and $c -gt 0) { $ready = $true; Log "engine ready (cat -> $c meanings)"; break }
     if ($i % 15 -eq 14) { Log "still waiting for engine... (${i}s)" }
   }
 }
@@ -224,7 +224,7 @@ foreach ($w in $words) {
   $word = $w.Trim()
   if ($word -eq '') { continue }
 
-  $okSet = [WinD]::SetText($ui.edit, $word)
+  $okSet = [WinD]::SetText($ui.edit, $word.ToLower())
   $okClick = $false
   if ($okSet) { $okClick = [WinD]::Click($ui.btn) }
 
