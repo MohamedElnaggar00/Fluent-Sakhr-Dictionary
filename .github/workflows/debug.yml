@@ -1,0 +1,70 @@
+name: Debug XamlCompiler
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build known-good fluent-prayer-times (environment check)
+        shell: bash
+        run: |
+          git clone -q --depth 1 https://github.com/MohamedElnaggar00/fluent-prayer-times fpt
+          dotnet publish fpt/FluentPrayerTimes.csproj -c Release -r win-x64 -p:Platform=x64 --self-contained false -p:DebugType=none -o fpt-publish 2>&1 | tail -5
+          echo "FPT_BUILD_EXIT=$?"
+
+      - name: Build minimal WinUI skeleton (content check)
+        shell: bash
+        run: |
+          mkdir -p mini
+          cat > mini/mini.csproj <<'PROJ'
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <OutputType>WinExe</OutputType>
+              <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+              <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+              <RootNamespace>mini</RootNamespace>
+              <AssemblyName>mini</AssemblyName>
+              <Platforms>x64</Platforms>
+              <PlatformTarget>x64</PlatformTarget>
+              <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+              <UseWinUI>true</UseWinUI>
+              <EnableMsixTooling>true</EnableMsixTooling>
+              <WindowsPackageType>None</WindowsPackageType>
+              <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+              <SelfContained>false</SelfContained>
+              <Nullable>enable</Nullable>
+              <ImplicitUsings>enable</ImplicitUsings>
+            </PropertyGroup>
+            <ItemGroup>
+              <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250108002" />
+            </ItemGroup>
+          </Project>
+PROJ
+          cat > mini/App.xaml <<'XAML'
+          <Application x:Class="mini.App" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+            <Application.Resources>
+              <ResourceDictionary>
+                <ResourceDictionary.MergedDictionaries>
+                  <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                </ResourceDictionary.MergedDictionaries>
+              </ResourceDictionary>
+            </Application.Resources>
+          </Application>
+XAML
+          cat > mini/App.xaml.cs <<'CS'
+          using Microsoft.UI.Xaml;
+          namespace mini;
+          public partial class App : Application
+          {
+              public App() { InitializeComponent(); }
+              protected override void OnLaunched(LaunchActivatedEventArgs args) { }
+          }
+CS
+          dotnet publish mini/mini.csproj -c Release -r win-x64 -p:Platform=x64 --self-contained false -p:DebugType=none -o mini-publish 2>&1 | tail -5
+          echo "MINI_BUILD_EXIT=$?"
