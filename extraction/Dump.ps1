@@ -315,7 +315,13 @@ foreach ($w in $words) {
     }
   }
 
-  if ($done -lt 15) { Log "word='$word' okSel=$okSel sel=$sel okMC=$okMC mc=$mc match='$match' n=$($meanings.Count)" }
+  if ($done -lt 15) {
+    $okW = $false
+    $wc = [WinD]::LbCount($ui.lbWord, [ref]$okW)
+    $etxt = [WinD]::Txt($ui.edit)
+    Log "word='$word' okSel=$okSel sel=$sel okMC=$okMC mc=$mc lbWordCnt=$wc editTxt=[$etxt] match='$match' n=$($meanings.Count)"
+  }
+  if ($done -eq 9 -or $done -eq 12) { Shot "diag-word$done.png" }
   $rec = [ordered]@{ word = $word; match = $match; meanings = $meanings }
   $sw.WriteLine(($rec | ConvertTo-Json -Compress))
   $done++
