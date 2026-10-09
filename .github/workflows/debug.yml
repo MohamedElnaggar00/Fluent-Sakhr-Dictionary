@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [vN1-u3plusComments, vN2-realNoComments]
+        variant: [vP1-u3plusRes, vP2-p1plusBoxRes]
     steps:
       - uses: actions/checkout@v4
 
