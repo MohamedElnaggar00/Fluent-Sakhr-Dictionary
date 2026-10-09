@@ -43,7 +43,25 @@ public static class DictionaryService
     static InfBucket[] _infBuckets = Array.Empty<InfBucket>();
     static readonly Dictionary<string, (string Lemma, string Note)> _infAr = new(StringComparer.Ordinal);
     static readonly object _gate = new();
-    static bool _loaded;
+    static Task? _coreTask;
+    static Task? _wikTask;
+
+    /// <summary>Core 1996 data (plus tiny translations table). Kicked off at app start on a
+    /// background thread so the window paints instantly; searches await it.</summary>
+    public static Task CoreReady
+    {
+        get { lock (_gate) return _coreTask ??= Task.Run(LoadCore); }
+    }
+
+    /// <summary>Wiktionary extras (Arabic index + both inflection tables, ~35MB). Loaded on
+    /// first use and only when the Wiktionary toggle is on; Sakhr-only mode never pays for it.</summary>
+    public static Task WikReady
+    {
+        get { lock (_gate) return _wikTask ??= Task.Run(LoadWik); }
+    }
+
+    static void EnsureCore() => CoreReady.GetAwaiter().GetResult();
+    static void EnsureWik() => WikReady.GetAwaiter().GetResult();
 
     sealed class RevBucket
     {
@@ -66,11 +84,8 @@ public static class DictionaryService
 
     public static int Count => _entries.Length;
 
-    public static void EnsureLoaded()
+    static void LoadCore()
     {
-        lock (_gate)
-        {
-            if (_loaded) return;
             string path = Path.Combine(AppContext.BaseDirectory, "data", "dictionary.jsonl");
             var entries = new List<Entry>(64 * 1024);
             var rev = new Dictionary<string, RevBucket>(StringComparer.Ordinal);
@@ -118,6 +133,29 @@ public static class DictionaryService
             Array.Sort(_revKeys, StringComparer.Ordinal);
             _revBuckets = _revKeys.Select(k => rev[k]).ToArray();
 
+            // Arabic translations filling the 1996 index's empty records (Wiktionary
+            // translation tables + exact gloss matches, CC BY-SA 4.0). Optional file.
+            var tr = new Dictionary<string, string[]>(StringComparer.Ordinal);
+            string trPath = Path.Combine(AppContext.BaseDirectory, "data", "translations-en-ar.jsonl");
+            if (File.Exists(trPath))
+            {
+                foreach (var line in File.ReadLines(trPath))
+                {
+                    if (line.Length == 0) continue;
+                    using var doc = JsonDocument.Parse(line);
+                    var root = doc.RootElement;
+                    string w = root.GetProperty("word").GetString() ?? "";
+                    var ms = root.GetProperty("meanings").EnumerateArray().Select(m => m.GetString() ?? "").Where(m => m.Length > 0).ToArray();
+                    if (w.Length > 0 && ms.Length > 0) tr[w] = ms;
+                }
+            }
+            _trForms = tr.Keys.ToArray();
+            Array.Sort(_trForms, StringComparer.Ordinal);
+            _trBuckets = _trForms.Select(k => tr[k]).ToArray();
+    }
+
+    static void LoadWik()
+    {
             // Wiktionary Arabic-English data (CC BY-SA 4.0). Optional file: the app still
             // works from the 1996 reverse index alone when it is absent.
             var wik = new Dictionary<string, WikBucket>(StringComparer.Ordinal);
@@ -175,26 +213,6 @@ public static class DictionaryService
             Array.Sort(_infForms, StringComparer.Ordinal);
             _infBuckets = _infForms.Select(k => inf[k]).ToArray();
 
-            // Arabic translations filling the 1996 index's empty records (Wiktionary
-            // translation tables + exact gloss matches, CC BY-SA 4.0). Optional file.
-            var tr = new Dictionary<string, string[]>(StringComparer.Ordinal);
-            string trPath = Path.Combine(AppContext.BaseDirectory, "data", "translations-en-ar.jsonl");
-            if (File.Exists(trPath))
-            {
-                foreach (var line in File.ReadLines(trPath))
-                {
-                    if (line.Length == 0) continue;
-                    using var doc = JsonDocument.Parse(line);
-                    var root = doc.RootElement;
-                    string w = root.GetProperty("word").GetString() ?? "";
-                    var ms = root.GetProperty("meanings").EnumerateArray().Select(m => m.GetString() ?? "").Where(m => m.Length > 0).ToArray();
-                    if (w.Length > 0 && ms.Length > 0) tr[w] = ms;
-                }
-            }
-            _trForms = tr.Keys.ToArray();
-            Array.Sort(_trForms, StringComparer.Ordinal);
-            _trBuckets = _trForms.Select(k => tr[k]).ToArray();
-
             // Arabic inflections (same Wiktionary source): normalized form -> (lemma, note).
             string infArPath = Path.Combine(AppContext.BaseDirectory, "data", "inflections-ar.jsonl");
             if (File.Exists(infArPath))
@@ -212,8 +230,6 @@ public static class DictionaryService
                     if (!_infAr.ContainsKey(key)) _infAr[key] = (lemma, note);
                 }
             }
-            _loaded = true;
-        }
     }
 
     /// <summary>Strips tashkeel/tatweel, unifies hamzated alefs and friends, keeps Arabic letters and single spaces only.</summary>
@@ -245,7 +261,7 @@ public static class DictionaryService
     /// <summary>Binary-searched prefix window, then a bounded substring sweep if the prefix matched nothing.</summary>
     public static IReadOnlyList<Entry> Search(string query, int max = 200)
     {
-        EnsureLoaded();
+        EnsureCore();
         query = query.Trim().ToUpperInvariant();
         if (query.Length == 0) return Array.Empty<Entry>();
         int lo = 0, hi = _words.Length - 1, first = -1;
@@ -273,13 +289,14 @@ public static class DictionaryService
     /// <summary>Arabic -&gt; English: merges prefix windows over the Wiktionary index and the
     /// 1996 Sakhr reverse index. Wiktionary glosses win the entry; Sakhr lemmas ride along as
     /// a labeled supplement, so the two sources never interleave or duplicate.</summary>
-    public static IReadOnlyList<ArabicResult> SearchArabic(string query, int max = 200)
+    public static IReadOnlyList<ArabicResult> SearchArabic(string query, bool includeWik, int max = 200)
     {
-        EnsureLoaded();
+        EnsureCore();
+        if (includeWik) EnsureWik();
         string q = NormalizeArabic(query);
         if (q.Length == 0) return Array.Empty<ArabicResult>();
         var keys = new SortedSet<string>(StringComparer.Ordinal);
-        CollectPrefix(_wikKeys, q, keys, max);
+        if (includeWik) CollectPrefix(_wikKeys, q, keys, max);
         CollectPrefix(_revKeys, q, keys, max);
         var list = new List<ArabicResult>();
         foreach (string key in keys)
@@ -318,7 +335,8 @@ public static class DictionaryService
     /// verb or plural back to its dictionary form. Null when unknown or the lemma is absent.</summary>
     public static ArabicInflection? InflectionOfArabic(string query)
     {
-        EnsureLoaded();
+        EnsureWik();
+        EnsureCore();
         string q = NormalizeArabic(query);
         if (q.Length == 0 || !_infAr.TryGetValue(q, out var hit)) return null;
         if (ArabicByKey(NormalizeArabic(hit.Lemma)) is not { } lemma) return null;
@@ -343,7 +361,7 @@ public static class DictionaryService
 
     public static Entry? Exact(string word)
     {
-        EnsureLoaded();
+        EnsureCore();
         word = word.Trim().ToUpperInvariant();
         int i = Array.BinarySearch(_words, word, StringComparer.Ordinal);
         return i >= 0 ? _entries[i] : null;
@@ -355,7 +373,7 @@ public static class DictionaryService
     /// the Wiktionary toggle: Sakhr-only mode never sees these.</summary>
     public static string[]? TranslationsOf(string word)
     {
-        EnsureLoaded();
+        EnsureCore();
         word = word.Trim().ToUpperInvariant();
         if (word.Length == 0) return null;
         int i = Array.BinarySearch(_trForms, word, StringComparer.Ordinal);
@@ -364,7 +382,7 @@ public static class DictionaryService
 
     public static Inflection? InflectionOf(string query)
     {
-        EnsureLoaded();
+        EnsureWik();
         query = query.Trim().ToUpperInvariant();
         if (query.Length == 0) return null;
         int i = Array.BinarySearch(_infForms, query, StringComparer.Ordinal);

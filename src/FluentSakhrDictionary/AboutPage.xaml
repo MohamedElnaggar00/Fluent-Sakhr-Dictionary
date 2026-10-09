@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer>
         <StackPanel Padding="32" Spacing="6" MaxWidth="560">
-            <TextBlock Text="About" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,16"/>
+            <TextBlock x:Name="HeaderText" Text="About" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,16"/>
 
             <Border CornerRadius="12" Padding="24"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
@@ -15,10 +15,8 @@
                     <TextBlock Text="Sakhr Dictionary Revive" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                     <TextBlock Text="قاموس صخر" FontSize="18" HorizontalAlignment="Center"/>
                     <TextBlock x:Name="VersionText" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
-                    <TextBlock Text="A modern rebirth of the classic 1996 Sakhr English-Arabic dictionary: 59,427 lemmas, 125,896 Arabic meanings with full diacritics."
-                               FontSize="13" TextWrapping="Wrap" TextAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <TextBlock Text="Works fully offline - both databases are bundled inside the app, no internet needed."
-                               FontSize="13" TextWrapping="Wrap" TextAlignment="Center" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="DescText" FontSize="13" TextWrapping="Wrap" TextAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock x:Name="OfflineText" FontSize="13" TextWrapping="Wrap" TextAlignment="Center" FontWeight="SemiBold"/>
                 </StackPanel>
             </Border>
 
@@ -30,11 +28,11 @@
                     <HyperlinkButton Content="brought to you by Instinct"
                                      NavigateUri="https://instinct.com"
                                      FontSize="14" FontWeight="SemiBold" Padding="0"/>
-                    <TextBlock Text="Developer: Mohamed Elnaggar" FontSize="13"/>
-                    <TextBlock Text="Contributors: app.instinct" FontSize="13"/>
-                    <TextBlock Text="License: MIT" FontSize="13"/>
-                    <TextBlock Text="English-Arabic data: the original 1996 Sakhr dictionary" FontSize="13"/>
-                    <TextBlock Text="Arabic-English data: English Wiktionary via kaikki.org (wiktextract), CC BY-SA 4.0" FontSize="13" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="DevText" FontSize="13"/>
+                    <TextBlock x:Name="ContribText" FontSize="13"/>
+                    <TextBlock x:Name="LicenseText" FontSize="13"/>
+                    <TextBlock x:Name="DataEnText" FontSize="13" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="DataArText" FontSize="13" TextWrapping="Wrap"/>
                     <HyperlinkButton Content="github.com/MohamedElnaggar00/Sakhr-Dictionary-Revive"
                                      NavigateUri="https://github.com/MohamedElnaggar00/Sakhr-Dictionary-Revive"
                                      FontSize="13" Padding="0"/>

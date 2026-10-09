@@ -8,11 +8,14 @@ namespace FluentSakhrDictionary;
 public partial class MainWindow : Window
 {
     readonly Settings _settings;
+    bool _welcomedShown;
 
     public MainWindow()
     {
         InitializeComponent();
         _settings = Settings.Load();
+        _ = DictionaryService.CoreReady; // warm the data load while the window comes up
+        Loc.Apply(_settings);
         Title = "Sakhr Dictionary Revive - قاموس صخر الحديث";
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -28,10 +31,36 @@ public partial class MainWindow : Window
             WindowChrome.Apply(hwnd);
         }
         catch { }
+        ApplyLanguage();
         ContentFrame.Navigate(typeof(SearchPage));
-        Activated += (_, _) => { if (ContentFrame.Content is SearchPage sp) sp.FocusSearchBox(); };
+        Activated += async (_, _) =>
+        {
+            if (ContentFrame.Content is SearchPage sp) sp.FocusSearchBox();
+            // First launch with the Wiktionary feature: welcome once the window is up.
+            // Marked shown only after the dialog actually displays, so a failed attempt retries.
+            if (!_welcomedShown && !_settings.Welcomed && App.ScreenshotPath == null)
+            {
+                _welcomedShown = true;
+                await ShowWelcome();
+            }
+        };
         if (App.ScreenshotPath != null) RunScreenshot();
-        else if (!_settings.Welcomed) DispatcherQueue.TryEnqueue(async () => await ShowWelcome());
+    }
+
+    /// <summary>Applies the display language: mirrors the whole layout for Arabic and
+    /// localizes the navigation labels. Pages localize when (re)navigated.</summary>
+    public void ApplyLanguage()
+    {
+        Root.FlowDirection = Loc.IsArabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+        NavSearch.Content = Loc.T("Search", "بحث");
+        NavSettings.Content = Loc.T("Settings", "الإعدادات");
+        NavAbout.Content = Loc.T("About", "حول");
+    }
+
+    /// <summary>Re-navigates to the current page so it re-renders in the new language.</summary>
+    public void RefreshCurrentPage()
+    {
+        if (ContentFrame.Content != null) ContentFrame.Navigate(ContentFrame.Content.GetType());
     }
 
     /// <summary>First launch only: introduce the optional Wiktionary database and let the
@@ -41,24 +70,26 @@ public partial class MainWindow : Window
         var dialog = new ContentDialog
         {
             XamlRoot = Content.XamlRoot,
-            Title = "Welcome to Sakhr Dictionary Revive",
+            Title = Loc.T("Welcome to Sakhr Dictionary Revive", "مرحبًا بك في قاموس صخر الحديث"),
             Content = new TextBlock
             {
                 TextWrapping = TextWrapping.Wrap,
-                Text = "This app can also use the Wiktionary database to improve word understanding and matching: it powers inflection lookup (ABANDONS -> Abandon, يكتبون -> كتب) and adds extra Arabic meanings. Turn it on now, or leave it off to use the original 1996 Sakhr database only. You can change this anytime in Settings.",
+                Text = Loc.T(
+                    "This app can also use the Wiktionary database to improve word understanding and matching: it powers inflection lookup (ABANDONS -> Abandon, يكتبون -> كتب) and adds extra Arabic meanings. Turn it on now, or leave it off to use the original 1996 Sakhr database only. You can change this anytime in Settings.",
+                    "يمكن للتطبيق أيضًا استخدام قاعدة بيانات Wiktionary لتحسين فهم الكلمات ومطابقتها: فهي تدعم البحث عن التصريفات (ABANDONS ← Abandon، ويكتبون ← كتب) وتضيف معاني عربية إضافية. فعّلها الآن، أو اتركها متوقفة لاستخدام قاعدة صخر الأصلية لعام 1996 وحدها. يمكنك تغيير ذلك في أي وقت من الإعدادات."),
             },
-            PrimaryButtonText = "Turn on Wiktionary",
-            CloseButtonText = "Keep it off",
+            PrimaryButtonText = Loc.T("Turn on Wiktionary", "تفعيل Wiktionary"),
+            CloseButtonText = Loc.T("Keep it off", "إبقاؤها متوقفة"),
             DefaultButton = ContentDialogButton.Primary,
         };
         try
         {
             var result = await dialog.ShowAsync();
             _settings.UseWiktionary = result == ContentDialogResult.Primary;
+            _settings.Welcomed = true;
+            _settings.Save();
         }
-        catch { }
-        _settings.Welcomed = true;
-        _settings.Save();
+        catch { /* no XamlRoot yet or a dialog is up: leave Welcomed false and retry next launch */ }
     }
 
     async void RunScreenshot()
@@ -70,7 +101,7 @@ public partial class MainWindow : Window
             if (App.ShotTheme != null) ApplyTheme(App.ShotTheme);
             await Task.Delay(1200);
             if (App.ShotPage == "settings") { ContentFrame.Navigate(typeof(SettingsPage)); Log("settings page"); }
-            if (App.ShotWord != null && ContentFrame.Content is SearchPage sp) { sp.TypeAndSelect(App.ShotWord); Log("word typed"); }
+            if (App.ShotWord != null && ContentFrame.Content is SearchPage sp) { await sp.TypeAndSelect(App.ShotWord); Log("word typed"); }
             await Task.Delay(1500);
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             Log("hwnd=" + hwnd);

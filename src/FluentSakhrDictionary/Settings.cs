@@ -10,6 +10,7 @@ public class Settings
     public string Accent { get; set; } = "";        // "" = default teal #00A6A6
     public bool UseWiktionary { get; set; } // false = original 1996 Sakhr database only (his choice: off by default)
     public bool Welcomed { get; set; } // first-run welcome shown
+    public string Language { get; set; } = "system"; // system | en | ar
 
     static string FilePath => Path.Combine(App.AppData, "settings.json");
 

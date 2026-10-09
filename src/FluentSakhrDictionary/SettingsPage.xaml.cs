@@ -21,7 +21,53 @@ public partial class SettingsPage : Page
         BackdropPicker.SelectedIndex = _settings.Backdrop switch { "MicaAlt" => 1, "Acrylic" => 2, _ => 0 };
         InitAccentSwatches();
         WiktionaryToggle.IsOn = _settings.UseWiktionary;
+        LanguagePicker.SelectedIndex = _settings.Language switch { "en" => 1, "ar" => 2, _ => 0 };
+        LocalizeStatic();
         _ready = true;
+    }
+
+    void LocalizeStatic()
+    {
+        HeaderText.Text = Loc.T("Settings", "الإعدادات");
+        LanguageHeader.Text = Loc.T("Language", "اللغة");
+        LangSystem.Content = Loc.T("Match device (default)", "مطابق للغة الجهاز (الافتراضي)");
+        ThemeHeader.Text = Loc.T("Theme", "السمة");
+        ThemeSystem.Content = Loc.T("Use system setting", "مطابق لإعدادات الجهاز");
+        ThemeLight.Content = Loc.T("Light", "فاتحة");
+        ThemeDark.Content = Loc.T("Dark", "داكنة");
+        AccentHeader.Text = Loc.T("Accent color", "اللون المميز");
+        AccentCustomButton.Content = Loc.T("Custom color...", "لون مخصص...");
+        AccentResetButton.Content = Loc.T("Reset to default", "إعادة للافتراضي");
+        DictionaryHeader.Text = Loc.T("Dictionary", "القاموس");
+        WiktionaryToggle.Header = Loc.T("Wiktionary database", "قاعدة بيانات Wiktionary");
+        WiktionaryToggle.OnContent = Loc.T("On", "مُفعَّل");
+        WiktionaryToggle.OffContent = Loc.T("Off", "مُعطَّل");
+        WiktionaryNote.Text = Loc.T(
+            "Added so the dictionary can understand word inflections (e.g. ABANDONS <- Abandon, يكتبون <- كتب). When off, the app uses the original 1996 Sakhr database only, English to Arabic and back.",
+            "أُضيفت قاعدة بيانات Wiktionary ليتمكن القاموس من فهم تصريفات الكلمات (مثل ABANDONS ← Abandon ويكتبون ← كتب). عند إيقاف هذا الخيار يعمل التطبيق بقاعدة بيانات صخر الأصلية لعام 1996 فقط، من الإنجليزية إلى العربية ومن العربية إلى الإنجليزية.");
+        BackdropHeader.Text = Loc.T("Backdrop", "الخلفية");
+        BackdropMica.Content = "Mica";
+        BackdropMicaAlt.Content = "Mica Alt";
+        BackdropAcrylic.Content = Loc.T("Desktop Acrylic", "أكريليك سطح المكتب");
+        UpdatesHeader.Text = Loc.T("Updates", "التحديثات");
+        UpdatesNote.Text = Loc.T(
+            "The app never checks for updates on its own. Press the button to check once, right now.",
+            "لا يتحقق التطبيق من التحديثات من تلقاء نفسه. اضغط الزر للتحقق مرة واحدة الآن.");
+        CheckButton.Content = Loc.T("Check for updates", "التحقق من التحديثات");
+        UpdateLink.Content = Loc.T("Open download page", "فتح صفحة التنزيل");
+    }
+
+    void Language_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_ready) return;
+        _settings.Language = (LanguagePicker.SelectedItem as RadioButton)?.Tag as string ?? "system";
+        _settings.Save();
+        Loc.Apply(_settings);
+        if (App.Main is MainWindow w)
+        {
+            w.ApplyLanguage();
+            w.RefreshCurrentPage();
+        }
     }
 
     void Wiktionary_Toggled(object sender, RoutedEventArgs e)
@@ -78,9 +124,9 @@ public partial class SettingsPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = "Custom accent color",
+            Title = Loc.T("Custom accent color", "لون مميز مخصص"),
             Content = new ScrollViewer { Content = picker, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto },
-            CloseButtonText = "Done",
+            CloseButtonText = Loc.T("Done", "تم"),
             DefaultButton = ContentDialogButton.Close,
         };
         try { await dialog.ShowAsync(); } catch { }
@@ -98,7 +144,7 @@ public partial class SettingsPage : Page
     {
         CheckButton.IsEnabled = false;
         UpdateLink.Visibility = Visibility.Collapsed;
-        UpdateResult.Text = "Checking...";
+        UpdateResult.Text = Loc.T("Checking...", "جارٍ التحقق...");
         try
         {
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
@@ -116,20 +162,20 @@ public partial class SettingsPage : Page
             }
             if (Version.TryParse(tag, out var latest) && Version.TryParse(CurrentVersion, out var current) && latest > current)
             {
-                UpdateResult.Text = "Version " + tag + " is available.";
+                UpdateResult.Text = Loc.T("Version " + tag + " is available.", "الإصدار " + tag + " متاح.");
                 UpdateLink.NavigateUri = new Uri("https://github.com/MohamedElnaggar00/Sakhr-Dictionary-Revive/releases/tag/v" + tag);
                 UpdateLink.Visibility = Visibility.Visible;
             }
             else
             {
                 UpdateResult.Text = tag.Length > 0
-                    ? "You're up to date (v" + CurrentVersion + ")."
-                    : "No releases found yet.";
+                    ? Loc.T("You're up to date (v" + CurrentVersion + ").", "أنت على أحدث إصدار (v" + CurrentVersion + ").")
+                    : Loc.T("No releases found yet.", "لا توجد إصدارات بعد.");
             }
         }
         catch
         {
-            UpdateResult.Text = "Couldn't check for updates. Check your internet connection and try again.";
+            UpdateResult.Text = Loc.T("Couldn't check for updates. Check your internet connection and try again.", "تعذر التحقق من التحديثات. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.");
         }
         finally
         {

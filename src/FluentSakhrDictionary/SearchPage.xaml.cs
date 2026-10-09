@@ -16,17 +16,21 @@ public partial class SearchPage : Page
     public SearchPage()
     {
         InitializeComponent();
-        _debounce.Tick += (_, _) => { _debounce.Stop(); RunSearch(); };
-        Loaded += (_, _) => { DictionaryService.EnsureLoaded(); SearchBox.Focus(FocusState.Programmatic); };
+        SearchBox.PlaceholderText = Loc.T("Type a word - اكتب كلمة", "اكتب كلمة - Type a word");
+        SakhrHeader.Text = Loc.T("From the Sakhr dictionary:", "من قاموس صخر:");
+        WikHeader.Text = Loc.T("From Wiktionary:", "من Wiktionary:");
+        HomeOfflineText.Text = Loc.T("Works fully offline - no internet needed.", "يعمل تمامًا دون اتصال بالإنترنت.");
+        _debounce.Tick += (_, _) => { _debounce.Stop(); _ = RunSearch(); };
+        Loaded += (_, _) => { _ = DictionaryService.CoreReady; SearchBox.Focus(FocusState.Programmatic); };
     }
 
     public void FocusSearchBox() => SearchBox.Focus(FocusState.Programmatic);
 
     /// <summary>CI screenshot helper: type a word (English or Arabic) and show its translations.</summary>
-    public void TypeAndSelect(string word)
+    public async Task TypeAndSelect(string word)
     {
         SearchBox.Text = word;
-        RunSearch();
+        await RunSearch();
         if (_current.Count > 0) { ResultsList.SelectedIndex = 0; ShowEntry(_current[0]); }
         else if (_currentRev.Count > 0) { ResultsList.SelectedIndex = 0; ShowReverse(_currentRev[0]); }
         else if (_currentInflection != null) ShowInflection(_currentInflection);
@@ -55,16 +59,27 @@ public partial class SearchPage : Page
         }
     }
 
+    async Task<Inflection?> InflectionOfEn(string q)
+    {
+        await DictionaryService.WikReady;
+        return DictionaryService.InflectionOf(q);
+    }
+
     static bool HasArabic(string q)
     {
         foreach (char c in q) if (c >= '؀' && c <= 'ۿ') return true;
         return false;
     }
 
-    void RunSearch()
+    int _searchVersion;
+
+    async Task RunSearch()
     {
+        int version = ++_searchVersion;
         string q = SearchBox.Text.Trim();
         _useWiktionary = Settings.Load().UseWiktionary;
+        await DictionaryService.CoreReady;
+        if (version != _searchVersion) return;
         HomeOfflineText.Visibility = Visibility.Collapsed;
         if (q.Length == 0)
         {
@@ -81,8 +96,12 @@ public partial class SearchPage : Page
             _current = Array.Empty<Entry>();
             _currentInflection = null;
             _currentArInflection = null;
-            _currentRev = DictionaryService.SearchArabic(q);
-            if (!_useWiktionary) _currentRev = _currentRev.Where(r => r.SakhrLemmas.Length > 0).ToArray();
+            if (_useWiktionary)
+            {
+                await DictionaryService.WikReady;
+                if (version != _searchVersion) return;
+            }
+            _currentRev = DictionaryService.SearchArabic(q, _useWiktionary);
             ResultsList.FlowDirection = FlowDirection.RightToLeft;
             ResultsList.ItemsSource = _currentRev;
             var exact = _currentRev.FirstOrDefault(x => DictionaryService.NormalizeArabic(x.ArabicTerm) == DictionaryService.NormalizeArabic(q));
@@ -92,7 +111,7 @@ public partial class SearchPage : Page
                 ResultsList.SelectedItem = pick;
                 ShowReverse(pick);
             }
-            else if (_useWiktionary && DictionaryService.InflectionOfArabic(q) is { } arinf)
+            else if (_useWiktionary && DictionaryService.InflectionOfArabic(q) is { } arinf)  // WikReady already awaited above
             {
                 // Conjugated/plural Arabic form not in either index -> show its lemma (يكتب -> كتب).
                 _currentArInflection = arinf;
@@ -114,7 +133,7 @@ public partial class SearchPage : Page
                 ShowEntry(exact);
                 _currentInflection = null;
             }
-            else if (_useWiktionary && DictionaryService.InflectionOf(q) is { } inf && DictionaryService.Exact(inf.Lemma) is { Found: true })
+            else if (_useWiktionary && await InflectionOfEn(q) is { } inf && DictionaryService.Exact(inf.Lemma) is { Found: true })
             {
                 // Unknown word or empty 1996 miss-record, but a known inflection (ABANDONS -> ABANDON).
                 _currentInflection = inf;
@@ -149,7 +168,7 @@ public partial class SearchPage : Page
         SakhrHeader.Visibility = Visibility.Collapsed;
         SakhrRepeater.ItemsSource = null;
         SakhrRepeater.Visibility = Visibility.Collapsed;
-        NotFoundText.Text = "Not found.";
+        NotFoundText.Text = Loc.NotFound;
         NotFoundText.Visibility = Visibility.Visible;
     }
 
@@ -174,7 +193,7 @@ public partial class SearchPage : Page
         SakhrRepeater.Visibility = Visibility.Collapsed;
         if (entry.Found)
         {
-            WordSubtitle.Text = entry.Meanings.Length == 1 ? "1 meaning" : entry.Meanings.Length + " meanings";
+            WordSubtitle.Text = Loc.Meanings(entry.Meanings.Length);
             MeaningsRepeater.Visibility = Visibility.Visible;
             MeaningsRepeater.ItemsSource = entry.Meanings;
             NotFoundText.Visibility = Visibility.Collapsed;
@@ -185,7 +204,7 @@ public partial class SearchPage : Page
             var tr = _useWiktionary ? DictionaryService.TranslationsOf(entry.Word) : null;
             if (tr is { Length: > 0 })
             {
-                WordSubtitle.Text = tr.Length == 1 ? "1 meaning from Wiktionary" : tr.Length + " meanings from Wiktionary";
+                WordSubtitle.Text = Loc.MeaningsFromWiktionary(tr.Length);
                 MeaningsRepeater.Visibility = Visibility.Visible;
                 MeaningsRepeater.ItemsSource = tr;
                 NotFoundText.Visibility = Visibility.Collapsed;
@@ -194,7 +213,7 @@ public partial class SearchPage : Page
             {
                 WordSubtitle.Text = "";
                 MeaningsRepeater.ItemsSource = null;
-                NotFoundText.Text = "Not found.";
+                NotFoundText.Text = Loc.NotFound;
                 NotFoundText.Visibility = Visibility.Visible;
             }
         }
@@ -215,7 +234,7 @@ public partial class SearchPage : Page
         SakhrRepeater.ItemsSource = null;
         SakhrRepeater.Visibility = Visibility.Collapsed;
         string note = inf.Note.Length > 0 ? char.ToUpperInvariant(inf.Note[0]) + inf.Note[1..] : "Form";
-        WordSubtitle.Text = note + " of " + Entry.TitleCase(inf.Lemma) + (lemma.Meanings.Length == 1 ? " - 1 meaning" : " - " + lemma.Meanings.Length + " meanings");
+        WordSubtitle.Text = note + " of " + Entry.TitleCase(inf.Lemma) + " - " + Loc.Meanings(lemma.Meanings.Length);
         MeaningsRepeater.Visibility = Visibility.Visible;
         MeaningsRepeater.ItemsSource = lemma.Meanings;
         NotFoundText.Visibility = Visibility.Collapsed;
@@ -250,7 +269,7 @@ public partial class SearchPage : Page
             SakhrHeader.Visibility = Visibility.Visible;
             SakhrRepeater.Visibility = Visibility.Visible;
             SakhrRepeater.ItemsSource = rev.SakhrLemmas.Select(Entry.TitleCase).ToArray();
-            subtitle.Add(rev.SakhrLemmas.Length == 1 ? "1 English word" : rev.SakhrLemmas.Length + " English words");
+            subtitle.Add(Loc.EnglishWords(rev.SakhrLemmas.Length));
         }
         else
         {
@@ -264,7 +283,7 @@ public partial class SearchPage : Page
             EnglishRepeater.Visibility = Visibility.Visible;
             EnglishRepeater.ItemsSource = rev.Glosses;
             int n = rev.Glosses.Length;
-            subtitle.Add(n == 1 ? "1 meaning from Wiktionary" : n + " meanings from Wiktionary");
+            subtitle.Add(Loc.MeaningsFromWiktionary(n));
         }
         else
         {
@@ -275,7 +294,7 @@ public partial class SearchPage : Page
         WordSubtitle.Text = (rev.Pos.Length > 0 && subtitle.Count > 0 ? rev.Pos + " - " : "") + string.Join(" + ", subtitle);
         if (subtitle.Count == 0)
         {
-            NotFoundText.Text = "Not found.";
+            NotFoundText.Text = Loc.NotFound;
             NotFoundText.Visibility = Visibility.Visible;
         }
     }

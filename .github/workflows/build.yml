@@ -20,7 +20,7 @@ jobs:
         shell: bash
         run: |
           if ! dotnet publish src/FluentSakhrDictionary/FluentSakhrDictionary.csproj -c Release -r win-x64 -p:Platform=x64 --self-contained false \
-            -p:DebugType=none -o publish; then
+            -p:DebugType=none -p:PublishReadyToRun=true -o publish; then
             echo "=== XamlCompiler output.json ==="
             cat src/FluentSakhrDictionary/obj/x64/Release/net8.0-windows10.0.19041.0/win-x64/output.json 2>/dev/null || echo "no output.json"
             echo "=== direct XamlCompiler run ==="
@@ -61,6 +61,10 @@ jobs:
           '{"UseWiktionary":true,"Welcomed":true}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-home.png" -PassThru -Wait
           if (-not (Test-Path app-home.png)) { Write-Error "Home screenshot missing"; exit 1 }
+          '{"UseWiktionary":true,"Welcomed":true,"Language":"ar"}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-arabic-ui.png" -PassThru -Wait
+          if (-not (Test-Path app-arabic-ui.png)) { Write-Error "Arabic UI screenshot missing"; exit 1 }
+          '{"UseWiktionary":true,"Welcomed":true}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-light.png",'--shot-word','CAT' -PassThru -Wait
           if (-not (Test-Path app-light.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Light screenshot missing"; exit 1 }
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-dark.png",'--shot-word','CAT','--theme','Dark' -PassThru -Wait
@@ -101,3 +105,4 @@ jobs:
             app-home.png
             app-enriched.png
             app-sakhr-only-wik.png
+            app-arabic-ui.png

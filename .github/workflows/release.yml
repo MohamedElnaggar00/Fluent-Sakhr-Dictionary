@@ -38,7 +38,7 @@ jobs:
         shell: bash
         run: |
           dotnet publish src/FluentSakhrDictionary/FluentSakhrDictionary.csproj -c Release -r win-x64 -p:Platform=x64 --self-contained false \
-            -p:DebugType=none -p:Version=${{ steps.v.outputs.version }} \
+            -p:DebugType=none -p:PublishReadyToRun=true -p:Version=${{ steps.v.outputs.version }} \
             -p:AssemblyVersion=${{ steps.v.outputs.version }}.0 -p:FileVersion=${{ steps.v.outputs.version }}.0 \
             -o publish
 
