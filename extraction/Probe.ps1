@@ -59,6 +59,8 @@ public class WinQ {
   public static string Cls(IntPtr h) { var s = new StringBuilder(256); GetClassName(h, s, 256); return s.ToString(); }
   public static List<IntPtr> TopHwnds() { var r = new List<IntPtr>(); EnumWindows((h,l)=>{r.Add(h);return true;}, IntPtr.Zero); return r; }
   public static List<IntPtr> KidHwnds(IntPtr p) { var r = new List<IntPtr>(); EnumChildWindows(p, (h,l)=>{r.Add(h);return true;}, IntPtr.Zero); return r; }
+  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+  public static uint Pid(IntPtr h) { uint pid; GetWindowThreadProcessId(h, out pid); return pid; }
   public static bool SetText(IntPtr h, string t) { IntPtr res; return SendMessageTimeout(h, WM_SETTEXT, IntPtr.Zero, t, SMTO_ABORTIFHUNG, 3000, out res) != IntPtr.Zero; }
   public static bool Click(IntPtr h) { IntPtr res; return SendMessageTimeout(h, BM_CLICK, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 3000, out res) != IntPtr.Zero; }
   public static int LbCount(IntPtr h) { IntPtr res; if (SendMessageTimeout(h, LB_GETCOUNT, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 3000, out res) == IntPtr.Zero) return -2; return res.ToInt32(); }
@@ -127,11 +129,20 @@ Get-ChildItem -Path $srcExe.DirectoryName -File | ForEach-Object {
 }
 $proc = Start-Process -FilePath (Join-Path $ascii "sakhr.exe") -WorkingDirectory $ascii -PassThru
 Log "launched pid=$($proc.Id)"
-Start-Sleep -Seconds 10
-
 $dlg = [IntPtr]::Zero
-foreach ($h in [WinQ]::TopHwnds()) { if ([WinQ]::Cls($h) -eq '#32770' -and [WinQ]::Txt($h) -match 'The Dictionary') { $dlg = $h; break } }
-if ($dlg -eq [IntPtr]::Zero) { Log "FATAL: no dialog"; exit 1 }
+for ($i = 0; $i -lt 90; $i++) {
+  Start-Sleep -Milliseconds 500
+  if ($proc.HasExited) { Log "process exited, code=$($proc.ExitCode)"; break }
+  foreach ($h in [WinQ]::TopHwnds()) { if ([WinQ]::Cls($h) -eq '#32770' -and [WinQ]::Txt($h) -match 'The Dictionary') { $dlg = $h; break } }
+  if ($dlg -ne [IntPtr]::Zero) { break }
+}
+if ($dlg -eq [IntPtr]::Zero) {
+  Log "FATAL: no dialog after 45s; top windows:"
+  foreach ($h in [WinQ]::TopHwnds()) { Log "  0x$($h.ToInt64().ToString('X')) pid=$([WinQ]::Pid($h)) cls=[$([WinQ]::Cls($h))] txt=[$([WinQ]::Txt($h))]" }
+  Shot "probe-no-dialog.png"
+  exit 1
+}
+Log "dialog found after ~$([math]::Round(($i+1)*0.5,1))s"
 $edit=[IntPtr]::Zero; $btn=[IntPtr]::Zero; $lbWord=[IntPtr]::Zero; $lbMean=[IntPtr]::Zero
 foreach ($k in [WinQ]::KidHwnds($dlg)) {
   $id = [WinQ]::GetDlgCtrlID($k); $c = [WinQ]::Cls($k)
