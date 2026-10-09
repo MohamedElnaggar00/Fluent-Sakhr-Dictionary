@@ -279,55 +279,87 @@ function Read-WordMatch {
   return (Extract-Cp1256 $mem2)
 }
 
-function Test-Liveness {
-  # probe with 'cat'; returns $true if the app still filters correctly
-  [WinD]::SetText($ui.edit, 'cat') | Out-Null
+function Find-Lookup {
+  # after Click+settle: read the selected word and the meanings
+  $m = ''
+  $okS2 = $false
+  $sel2 = [WinD]::LbCurSel($ui.lbWord, [ref]$okS2)
+  if ($okS2 -and $sel2 -ge 0) {
+    $ptr2 = [WinD]::GetItemData($ui.lbWord, $sel2)
+    if ($ptr2.ToInt64() -gt 0) {
+      $mem2 = [WinD]::ReadMem($script:hProc, $ptr2, 128)
+      if ($null -ne $mem2) { $m = Extract-Cp1256 $mem2 }
+    }
+  }
+  $meanings = @()
+  $okM2 = $false
+  $mc2 = [WinD]::LbCount($ui.lbMean, [ref]$okM2)
+  if ($okM2 -and $mc2 -gt 0) {
+    for ($i = 0; $i -lt $mc2; $i++) {
+      $ptr = [WinD]::GetItemData($ui.lbMean, $i)
+      if ($ptr.ToInt64() -le 0) { continue }
+      $mem = [WinD]::ReadMem($script:hProc, $ptr, 512)
+      if ($null -eq $mem) { $meanings += $null } else { $meanings += (Extract-Cp1256 $mem) }
+    }
+  }
+  return @{ match = $m; mc = $mc2; meanings = $meanings }
+}
+
+function Invoke-Lookup($word) {
+  [WinD]::SetText($ui.edit, $word.ToLower()) | Out-Null
+  [WinD]::Click($ui.btn) | Out-Null
   Start-Sleep -Milliseconds $SettleMs
-  $m = Read-WordMatch
-  return ($m -ieq 'cat')
+  return Find-Lookup
+}
+
+function Test-Liveness {
+  $r = Invoke-Lookup 'cat'
+  return ($r.match -ieq 'cat' -and $r.mc -gt 0)
+}
+
+function Unwedge-Modals {
+  # a miss-click may open a hidden error dialog. Click buttons on ANY app dialog
+  # except the main one - regardless of title.
+  $found = $false
+  foreach ($h in [WinD]::TopHwnds()) {
+    if ([WinD]::Pid($h) -ne $script:proc.Id) { continue }
+    if ($h -eq $ui.dlg) { continue }
+    if ([WinD]::Cls($h) -ne '#32770') { continue }
+    $found = $true
+    Log "unwedge: app dialog 0x$($h.ToInt64().ToString('X')) vis=$([WinD]::Visible($h)) title=[$([WinD]::Txt($h))]"
+    foreach ($k in [WinD]::KidHwnds($h)) {
+      if ([WinD]::Cls($k) -eq 'Button') { Log "unwedge: clicking button id=$([WinD]::GetDlgCtrlID($k))"; [WinD]::Click($k) | Out-Null; break }
+    }
+  }
+  if (-not $found) { Log "unwedge: no extra app dialogs found" }
+  return $found
 }
 
 foreach ($w in $words) {
   $word = $w.Trim()
   if ($word -eq '') { continue }
 
-  # phase 1: set text, settle, check the word list WITHOUT clicking.
-  # clicking "Meaning" with no exact selection wedges the app's search state.
-  $okSet = [WinD]::SetText($ui.edit, $word.ToLower())
-  if (-not $okSet) {
-    $failStreak++
-    Log "settext failure on '$word' (streak $failStreak)"
-    if ($failStreak -ge 3) {
-      $ui = Launch-App
-      if (-not $ui) { Log "FATAL: relaunch failed"; break }
-      Open-ProcHandle
-      $failStreak = 0
-    }
-    continue
-  }
-  $failStreak = 0
-  Start-Sleep -Milliseconds $SettleMs
-  $match = Read-WordMatch
+  $r = Invoke-Lookup $word
 
-  if ($match -ine $word) {
-    # no exact selection: either genuine miss or a wedged app. Verify liveness.
+  if ($r.match -ine $word) {
+    # miss: either genuine not-found or a wedged app (hidden error dialog)
+    Unwedge-Modals | Out-Null
+    Start-Sleep -Milliseconds 500
     if (Test-Liveness) {
-      # app is fine -> genuine miss; restore nothing, next word will SetText over
-      Log "miss: '$word' (listbox match='$match') - not found"
+      Log "miss: '$word' (match='$($r.match)') - not found"
       $rec = [ordered]@{ word = $word; match = ''; meanings = @() }
       $sw.WriteLine(($rec | ConvertTo-Json -Compress))
       $done++
       continue
     }
-    # wedged: relaunch and retry the word once
-    Log "app wedged after '$word' - relaunching"
+    Log "still wedged after modal sweep on '$word' - relaunching"
+    Shot "wedge-$word.png"
     $ui = Launch-App
     if (-not $ui) { Log "FATAL: relaunch failed"; break }
     Open-ProcHandle
-    [WinD]::SetText($ui.edit, $word.ToLower()) | Out-Null
-    Start-Sleep -Milliseconds $SettleMs
-    $match = Read-WordMatch
-    if ($match -ine $word) {
+    Start-Sleep -Seconds 2
+    $r = Invoke-Lookup $word
+    if ($r.match -ine $word) {
       Log "miss after relaunch: '$word' - not found"
       $rec = [ordered]@{ word = $word; match = ''; meanings = @() }
       $sw.WriteLine(($rec | ConvertTo-Json -Compress))
@@ -336,36 +368,11 @@ foreach ($w in $words) {
     }
   }
 
-  # phase 2: exact match selected -> click Meaning, settle, read meanings
-  $okClick = [WinD]::Click($ui.btn)
-  if (-not $okClick) {
-    Log "click failure on '$word'"
-    $ui = Launch-App
-    if (-not $ui) { Log "FATAL: relaunch failed"; break }
-    Open-ProcHandle
-    continue
-  }
-  Start-Sleep -Milliseconds $SettleMs
-
-  $meanings = @()
-  $okMC = $false
-  $mc = [WinD]::LbCount($ui.lbMean, [ref]$okMC)
-  if ($okMC -and $mc -gt 0) {
-    for ($i = 0; $i -lt $mc; $i++) {
-      $ptr = [WinD]::GetItemData($ui.lbMean, $i)
-      if ($ptr.ToInt64() -le 0) { continue }
-      $mem = [WinD]::ReadMem($script:hProc, $ptr, 512)
-      if ($null -eq $mem) { $meanings += $null } else { $meanings += (Extract-Cp1256 $mem) }
-    }
-  }
-
-  if ($done -lt 15) {
-    Log "word='$word' match='$match' mc=$mc n=$($meanings.Count)"
-  }
-  $rec = [ordered]@{ word = $word; match = $match; meanings = $meanings }
+  if ($done -lt 15) { Log "word='$word' match='$($r.match)' mc=$($r.mc) n=$($r.meanings.Count)" }
+  $rec = [ordered]@{ word = $word; match = $r.match; meanings = $r.meanings }
   $sw.WriteLine(($rec | ConvertTo-Json -Compress))
   $done++
-  if ($done % 100 -eq 0) { $sw.Flush(); Dismiss-Modals $script:proc.Id; Log "progress: $done/$($words.Count)" }
+  if ($done % 100 -eq 0) { $sw.Flush(); Log "progress: $done/$($words.Count)" }
 }
 $sw.Flush(); $sw.Close()
 Log "dump done: $done records -> $outPath"
