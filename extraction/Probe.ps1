@@ -176,12 +176,12 @@ Log "dlg=0x$($dlg.ToInt64().ToString('X')) edit=0x$($edit.ToInt64().ToString('X'
 [WinQ]::SetForegroundWindow($dlg) | Out-Null
 Start-Sleep -Seconds 2
 
-$okS = [WinQ]::SetText($edit, 'cat')
+$okS = [WinQ]::SetText($edit, 'canned')
 Start-Sleep -Milliseconds 500
 $okC = [WinQ]::Click($btn)
 Log "lookup: set=$okS click=$okC"
 Start-Sleep -Seconds 3
-Shot "probe-cat-lookup.png"
+Shot "probe-canned-lookup.png"
 
 Log "lbWord count: $([WinQ]::LbCount($lbWord))  lbMean count: $([WinQ]::LbCount($lbMean))"
 $cp1256 = [Text.Encoding]::GetEncoding(1256)
@@ -226,6 +226,26 @@ $needles = @{
 foreach ($k in $needles.Keys) {
   $hits = [WinQ]::FindBytes($proc.Id, $needles[$k])
   Log "memory scan '$k': $($hits.Count) hits$(if ($hits.Count -gt 0) { ' at ' + (($hits | Select-Object -First 8 | ForEach-Object { '0x' + $_.ToString('X') }) -join ', ') })"
+}
+
+
+# second lookup: willed
+[WinQ]::SetText($edit, 'willed') | Out-Null
+Start-Sleep -Milliseconds 500
+[WinQ]::Click($btn) | Out-Null
+Start-Sleep -Seconds 3
+Shot "probe-willed-lookup.png"
+Log "willed: lbMean count: $([WinQ]::LbCount($lbMean))"
+for ($i = 0; $i -lt 8; $i++) {
+  $idata = [WinQ]::GetItemData($lbMean, $i)
+  if ($idata.ToInt64() -le 0) { Log "willed lbMean[$i]: itemdata=0"; continue }
+  $mem = [WinQ]::ReadMem($proc.Id, $idata, 512)
+  if ($null -eq $mem) { Log "willed lbMean[$i]: READ FAILED"; continue }
+  $hex = ($mem[0..63] | ForEach-Object { $_.ToString('X2') }) -join ' '
+  $bytes = New-Object System.Collections.Generic.List[byte]
+  for ($o = 0; $o -lt $mem.Length; $o++) { if ($mem[$o] -eq 0xFE -or $mem[$o] -eq 0) { break }; $bytes.Add($mem[$o]) }
+  $txt = $cp1256.GetString($bytes.ToArray())
+  Log "willed lbMean[$i]: hex=[$hex] decoded=[$txt]"
 }
 
 try { if (-not $proc.HasExited) { $proc.Kill() } } catch {}
