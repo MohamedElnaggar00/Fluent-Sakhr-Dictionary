@@ -35,6 +35,10 @@ capabilities the original program never had.
   like in Settings.
 - **Manual updates**: the app never checks for updates on its own - one
   button in Settings checks when you ask it to.
+- **Optional Wiktionary database**: a Settings toggle turns the Wiktionary
+  database off, leaving the app on the original Sakhr database alone,
+  English to Arabic and back. When it is on (the default), the dictionary
+  understands word inflections and adds Wiktionary meanings to Arabic search.
 
 ## Screenshots
 

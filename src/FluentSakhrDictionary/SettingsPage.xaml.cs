@@ -20,7 +20,15 @@ public partial class SettingsPage : Page
         ThemePicker.SelectedIndex = _settings.Theme switch { "Light" => 1, "Dark" => 2, _ => 0 };
         BackdropPicker.SelectedIndex = _settings.Backdrop switch { "MicaAlt" => 1, "Acrylic" => 2, _ => 0 };
         InitAccentSwatches();
+        WiktionaryToggle.IsOn = _settings.UseWiktionary;
         _ready = true;
+    }
+
+    void Wiktionary_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        _settings.UseWiktionary = WiktionaryToggle.IsOn;
+        _settings.Save();
     }
 
     void Setting_Changed(object sender, SelectionChangedEventArgs e)

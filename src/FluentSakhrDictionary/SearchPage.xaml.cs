@@ -11,6 +11,7 @@ public partial class SearchPage : Page
     IReadOnlyList<ArabicResult> _currentRev = Array.Empty<ArabicResult>();
     Inflection? _currentInflection;
     ArabicInflection? _currentArInflection;
+    bool _useWiktionary = true;
 
     public SearchPage()
     {
@@ -63,6 +64,7 @@ public partial class SearchPage : Page
     void RunSearch()
     {
         string q = SearchBox.Text.Trim();
+        _useWiktionary = Settings.Load().UseWiktionary;
         if (q.Length == 0)
         {
             _current = Array.Empty<Entry>();
@@ -88,7 +90,7 @@ public partial class SearchPage : Page
                 ResultsList.SelectedItem = pick;
                 ShowReverse(pick);
             }
-            else if (DictionaryService.InflectionOfArabic(q) is { } arinf)
+            else if (_useWiktionary && DictionaryService.InflectionOfArabic(q) is { } arinf)
             {
                 // Conjugated/plural Arabic form not in either index -> show its lemma (يكتب -> كتب).
                 _currentArInflection = arinf;
@@ -109,7 +111,7 @@ public partial class SearchPage : Page
                 ShowEntry(exact);
                 _currentInflection = null;
             }
-            else if (DictionaryService.InflectionOf(q) is { } inf && DictionaryService.Exact(inf.Lemma) is { Found: true })
+            else if (_useWiktionary && DictionaryService.InflectionOf(q) is { } inf && DictionaryService.Exact(inf.Lemma) is { Found: true })
             {
                 // Unknown word or empty 1996 miss-record, but a known inflection (ABANDONS -> ABANDON).
                 _currentInflection = inf;
@@ -222,7 +224,7 @@ public partial class SearchPage : Page
             SakhrRepeater.Visibility = Visibility.Collapsed;
             SakhrRepeater.ItemsSource = null;
         }
-        if (rev.FromWiktionary)
+        if (_useWiktionary && rev.FromWiktionary)
         {
             WikHeader.Visibility = Visibility.Visible;
             EnglishRepeater.Visibility = Visibility.Visible;
