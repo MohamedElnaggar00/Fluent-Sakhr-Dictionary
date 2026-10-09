@@ -9,6 +9,9 @@ public partial class AboutPage : Page
 {
     static string CurrentVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.1.0";
 
+    /// <summary>CI screenshots: jump to the end so the lower cards (repo link, updates) are captured.</summary>
+    public void ScrollToBottom() => RootScroll.ChangeView(null, RootScroll.ScrollableHeight, null);
+
     public AboutPage()
     {
         InitializeComponent();

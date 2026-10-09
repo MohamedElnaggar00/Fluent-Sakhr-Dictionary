@@ -73,15 +73,15 @@ jobs:
           $ok = $p.WaitForExit(120000)
           if (-not $ok) { Stop-Process -Id $p.Id -Force; Write-Error "Arabic About capture hung"; exit 1 }
           if (-not (Test-Path app-about-ar.png)) { Write-Error "Arabic About screenshot missing"; exit 1 }
-          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-about-ar-full.png",'--shot-page','about','--shot-size','1200x1000' -PassThru
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-about-ar-end.png",'--shot-page','about-end' -PassThru
           $ok = $p.WaitForExit(120000)
           if (-not $ok) { Stop-Process -Id $p.Id -Force; Write-Error "Arabic About full capture hung"; exit 1 }
-          if (-not (Test-Path app-about-ar-full.png)) { Write-Error "Arabic About full screenshot missing"; exit 1 }
+          if (-not (Test-Path app-about-ar-end.png)) { Write-Error "Arabic About full screenshot missing"; exit 1 }
           '{"UseWiktionary":true}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
-          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-about-full.png",'--shot-page','about','--shot-size','1200x1000' -PassThru
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-about-end.png",'--shot-page','about-end' -PassThru
           $ok = $p.WaitForExit(120000)
           if (-not $ok) { Stop-Process -Id $p.Id -Force; Write-Error "About full capture hung"; exit 1 }
-          if (-not (Test-Path app-about-full.png)) { Write-Error "About full screenshot missing"; exit 1 }
+          if (-not (Test-Path app-about-end.png)) { Write-Error "About full screenshot missing"; exit 1 }
           '{"UseWiktionary":true,"Language":"ar"}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-arabic-ui-cat.png",'--shot-word','CAT' -PassThru -Wait
           if (-not (Test-Path app-arabic-ui-cat.png)) { Write-Error "Arabic UI CAT screenshot missing"; exit 1 }
@@ -159,8 +159,8 @@ jobs:
             app-arabic-ui-ar.png
             app-arabic-ui-f.png
             app-about-ar.png
-            app-about-ar-full.png
-            app-about-full.png
+            app-about-ar-end.png
+            app-about-end.png
             app-settings-his.png
             app-settings-ar.png
             app-about.png

@@ -84,6 +84,7 @@ public partial class MainWindow : Window
             if (App.ShotPage == "about") { Nav.SelectedItem = NavAbout; Log("about page via nav transition"); }
             if (App.ShotWord != null && ContentFrame.Content is SearchPage sp) { await sp.TypeAndSelect(App.ShotWord); Log("word typed"); }
             await Task.Delay(1500);
+            if (App.ShotPage == "about-end") { Nav.SelectedItem = NavAbout; await Task.Delay(900); if (ContentFrame.Content is AboutPage ap2) { ap2.ScrollToBottom(); Log("about scrolled to end"); } await Task.Delay(400); }
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             Log("hwnd=" + hwnd);
             CaptureHelper.Save(hwnd, App.ScreenshotPath!);
