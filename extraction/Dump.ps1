@@ -251,6 +251,27 @@ for ($attempt = 0; $attempt -lt 4 -and -not $ready; $attempt++) {
     Start-Sleep -Seconds 1
     $c = [WinD]::LbCount($ui.lbMean, [ref]$okR)
     if ($okR -and $c -gt 0) { $ready = $true; Log "engine ready (cat -> $c meanings)"; break }
+    if ($i % 5 -eq 4) {
+      # diagnostics: cached vs fresh handles, all app dialogs + listbox counts
+      $fresh = Find-UI
+      $fc = -1; $fw = -1
+      if ($fresh) {
+        $fc = [WinD]::LbCount($fresh.lbMean, [ref]$okF)
+        $fw = [WinD]::LbCount($fresh.lbWord, [ref]$okFw)
+      }
+      Log "diag ${i}s: cached lbMean=0x$($ui.lbMean.ToInt64().ToString('X')) c=$c ok=$okR | fresh dlg=0x$($fresh.dlg.ToInt64().ToString('X')) lbMean=0x$($fresh.lbMean.ToInt64().ToString('X')) c=$fc lbWord c=$fw"
+      foreach ($h in [WinD]::TopHwnds()) {
+        if ([WinD]::Pid($h) -eq $script:proc.Id -and [WinD]::Cls($h) -eq '#32770') {
+          $kids = @()
+          foreach ($k in [WinD]::KidHwnds($h)) {
+            if ([WinD]::Cls($k) -eq 'ListBox') { $kids += ("id=" + [WinD]::GetDlgCtrlID($k) + " cnt=" + [WinD]::LbCount($k, [ref]$okX)) }
+          }
+          Log "  appdlg 0x$($h.ToInt64().ToString('X')) vis=$([WinD]::Visible($h)) title=[$([WinD]::Txt($h))] lbs=[$($kids -join ', ')]"
+        }
+      }
+      if ($i -eq 19) { Shot "readiness-diag.png" }
+      if ($okF -and $fc -gt 0) { Log "fresh handles show $fc meanings - switching to fresh UI"; $ui = $fresh; $ready = $true; break }
+    }
     if ($i % 15 -eq 14) { Log "still waiting for engine... (${i}s)"; Dismiss-Modals $script:proc.Id }
   }
 }
