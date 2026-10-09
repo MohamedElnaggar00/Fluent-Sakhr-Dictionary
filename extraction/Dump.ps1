@@ -7,7 +7,8 @@ param(
   [string]$WordsFile = "data\words.txt",
   [int]$Start = 0,
   [int]$Count = 20,
-  [string]$OutName = "dump.jsonl"
+  [string]$OutName = "dump.jsonl",
+  [int]$SettleMs = 1200
 )
 $ErrorActionPreference = 'Continue'
 $OutDir = "$env:RUNNER_TEMP\dump-results"
@@ -237,43 +238,24 @@ Start-Sleep -Seconds 2
 Log "dialog shown + foregrounded, engine settle wait done"
 Open-ProcHandle
 
-# wait for the dictionary engine: trigger ONE lookup, then wait quietly.
-# (spamming SetText/Click every 500ms appears to keep the engine from ever
-# finishing its lazy data load)
+# wait for the dictionary engine: probe-proven sequence. CRITICAL: the 1996 app
+# is killed by ANY window message arriving mid-lookup (polls at +1s hang its UI
+# thread permanently). Never interop between click and the settle delay.
 $ready = $false
-for ($attempt = 0; $attempt -lt 4 -and -not $ready; $attempt++) {
+for ($attempt = 0; $attempt -lt 3 -and -not $ready; $attempt++) {
   Dismiss-Modals $script:proc.Id
   $okS = [WinD]::SetText($ui.edit, 'cat')
-  Start-Sleep -Milliseconds 300
+  Start-Sleep -Milliseconds 500
   $okC = [WinD]::Click($ui.btn)
-  Log "readiness attempt $attempt`: set=$okS click=$okC - waiting quietly"
-  for ($i = 0; $i -lt 45; $i++) {
-    Start-Sleep -Seconds 1
-    $c = [WinD]::LbCount($ui.lbMean, [ref]$okR)
-    if ($okR -and $c -gt 0) { $ready = $true; Log "engine ready (cat -> $c meanings)"; break }
-    if ($i % 5 -eq 4) {
-      # diagnostics: cached vs fresh handles, all app dialogs + listbox counts
-      $fresh = Find-UI
-      $fc = -1; $fw = -1
-      if ($fresh) {
-        $fc = [WinD]::LbCount($fresh.lbMean, [ref]$okF)
-        $fw = [WinD]::LbCount($fresh.lbWord, [ref]$okFw)
-      }
-      Log "diag ${i}s: cached lbMean=0x$($ui.lbMean.ToInt64().ToString('X')) c=$c ok=$okR | fresh dlg=0x$($fresh.dlg.ToInt64().ToString('X')) lbMean=0x$($fresh.lbMean.ToInt64().ToString('X')) c=$fc lbWord c=$fw"
-      foreach ($h in [WinD]::TopHwnds()) {
-        if ([WinD]::Pid($h) -eq $script:proc.Id -and [WinD]::Cls($h) -eq '#32770') {
-          $kids = @()
-          foreach ($k in [WinD]::KidHwnds($h)) {
-            if ([WinD]::Cls($k) -eq 'ListBox') { $kids += ("id=" + [WinD]::GetDlgCtrlID($k) + " cnt=" + [WinD]::LbCount($k, [ref]$okX)) }
-          }
-          Log "  appdlg 0x$($h.ToInt64().ToString('X')) vis=$([WinD]::Visible($h)) title=[$([WinD]::Txt($h))] lbs=[$($kids -join ', ')]"
-        }
-      }
-      if ($i -eq 19) { Shot "readiness-diag.png" }
-      if ($okF -and $fc -gt 0) { Log "fresh handles show $fc meanings - switching to fresh UI"; $ui = $fresh; $ready = $true; break }
-    }
-    if ($i % 15 -eq 14) { Log "still waiting for engine... (${i}s)"; Dismiss-Modals $script:proc.Id }
-  }
+  Log "readiness attempt $attempt`: set=$okS click=$okC - quiet 4s settle"
+  Start-Sleep -Seconds 4
+  $okR = $false
+  $c = [WinD]::LbCount($ui.lbMean, [ref]$okR)
+  Log "readiness check: ok=$okR count=$c"
+  if ($okR -and $c -gt 0) { $ready = $true; Log "engine ready (cat -> $c meanings)"; break }
+  Shot "readiness-attempt$attempt.png"
+  $fresh = Find-UI
+  if ($fresh -and $fresh.lbMean -ne [IntPtr]::Zero) { $ui = $fresh; Log "switched to fresh UI handles" }
 }
 if (-not $ready) { Shot "fatal-readiness.png"; Log "FATAL: engine never returned meanings for CAT"; exit 1 }
 
@@ -306,14 +288,8 @@ foreach ($w in $words) {
   }
   $failStreak = 0
 
-  # wait for the meaning list to settle (count stable), max ~1.5s
-  $lastCount = -2; $stable = 0
-  for ($t = 0; $t -lt 30; $t++) {
-    Start-Sleep -Milliseconds 50
-    $c = [WinD]::LbCount($ui.lbMean, [ref]$okC)
-    if (-not $okC) { break }
-    if ($c -eq $lastCount) { $stable++; if ($stable -ge 2) { break } } else { $stable = 0; $lastCount = $c }
-  }
+  # no polling: quiet settle, then a single read (mid-lookup messages kill the app)
+  Start-Sleep -Milliseconds $SettleMs
 
   # matched lemma from the word listbox current selection (owner-drawn: item data is a record pointer)
   $match = ''
