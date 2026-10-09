@@ -1,9 +1,9 @@
-# Fluent Sakhr - extraction probe v3.
-# v2 findings: app launches; main window class is DictWClass1 ("A/E Dictionary") but
-# starts HIDDEN; a "Fatal Application Exit" dialog ("Error in DLL'S") appears from a
-# second process; v2 matched the wrong window (IME) and hung on blocking UI calls.
-# v3: dismiss fatal dialogs, target DictWClass1, timeout-guarded SendMessage only,
-# no SendKeys, per-step logging, process tree + module dumps.
+# Fluent Sakhr - extraction probe v4.
+# v3 findings: the app's own FatalAppExit says "Error in DLL'S" (dialog is hosted by
+# csrss.exe). The DLLs import only KERNEL32/USER32 - no missing runtime deps. Likely
+# cause: the exe finds its own dir via ANSI GetModuleFileNameA; under the runner's
+# en-US codepage the Arabic folder name mangles to '?' so LoadLibrary of its own
+# DLLs fails. v4: run a copy from an all-ASCII path (C:\sakhrapp\sakhr.exe).
 $ErrorActionPreference = 'Continue'
 $OutDir = "$env:RUNNER_TEMP\probe-results"
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
@@ -116,6 +116,23 @@ $exe = Get-ChildItem -Path $dest -Recurse -Filter *.exe |
 Log "main exe candidate: $($exe.FullName) ($($exe.Length) bytes)"
 Get-ChildItem -Path $dest -Recurse | Select-Object FullName, Length |
   Out-File "$OutDir\files.txt"
+Get-WinSystemLocale | Out-File "$OutDir\system-locale.txt"
+Log "system locale: $((Get-WinSystemLocale).Name)"
+
+# all-ASCII copy: old ANSI code path mangles the Arabic folder name under en-US ACP
+$ascii = "C:\sakhrapp"
+New-Item -ItemType Directory -Force -Path $ascii | Out-Null
+$n = 0
+Get-ChildItem -Path $exe.DirectoryName -File | ForEach-Object {
+  $name = $_.Name
+  if ($name -match '[^\x00-\x7F]') {
+    $ext = [IO.Path]::GetExtension($name)
+    if ($name -eq $exe.Name) { $name = "sakhr$ext" } else { $n++; $name = "file$n$ext" }
+  }
+  Copy-Item $_.FullName (Join-Path $ascii $name)
+}
+$exe = Get-Item (Join-Path $ascii "sakhr.exe")
+Log "ascii copy launched from: $($exe.FullName)"
 
 # --- 2. launch -------------------------------------------------------------
 $proc = Start-Process -FilePath $exe.FullName -WorkingDirectory $exe.DirectoryName -PassThru
