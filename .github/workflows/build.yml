@@ -57,6 +57,8 @@ jobs:
       - name: Capture app screenshots (CAT light + dark, Arabic قط, inflections)
         shell: pwsh
         run: |
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-home.png" -PassThru -Wait
+          if (-not (Test-Path app-home.png)) { Write-Error "Home screenshot missing"; exit 1 }
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-light.png",'--shot-word','CAT' -PassThru -Wait
           if (-not (Test-Path app-light.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Light screenshot missing"; exit 1 }
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-dark.png",'--shot-word','CAT','--theme','Dark' -PassThru -Wait
@@ -91,3 +93,4 @@ jobs:
             app-inflection-ar.png
             app-sakhr-only.png
             app-sakhr-only-ar.png
+            app-home.png
