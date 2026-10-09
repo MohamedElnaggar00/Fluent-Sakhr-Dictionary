@@ -58,6 +58,11 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force "$env:APPDATA\SakhrDictionaryRevive" | Out-Null
+          # About page: the app icon must render (crisp 256px PNG).
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-about.png",'--shot-page','about' -PassThru
+          $ok = $p.WaitForExit(120000)
+          if (-not $ok) { Stop-Process -Id $p.Id -Force; Write-Error "About page capture hung"; exit 1 }
+          if (-not (Test-Path app-about.png)) { Write-Error "About screenshot missing"; exit 1 }
           '{"UseWiktionary":true}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-home.png" -PassThru -Wait
           if (-not (Test-Path app-home.png)) { Write-Error "Home screenshot missing"; exit 1 }
@@ -77,7 +82,17 @@ jobs:
           $ok = $p.WaitForExit(120000)
           if (-not $ok) { Stop-Process -Id $p.Id -Force; if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "REPRODUCED: ARABIC settings page HUNG (killed after 120s)"; exit 1 }
           if (-not (Test-Path app-settings-ar.png)) { Write-Error "Arabic settings screenshot missing"; exit 1 }
+          # About page: the app icon must render (crisp 256px PNG).
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-about.png",'--shot-page','about' -PassThru
+          $ok = $p.WaitForExit(120000)
+          if (-not $ok) { Stop-Process -Id $p.Id -Force; Write-Error "About page capture hung"; exit 1 }
+          if (-not (Test-Path app-about.png)) { Write-Error "About screenshot missing"; exit 1 }
           '{"UseWiktionary":true}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
+          # About page: the app icon must render (crisp 256px PNG).
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-about.png",'--shot-page','about' -PassThru
+          $ok = $p.WaitForExit(120000)
+          if (-not $ok) { Stop-Process -Id $p.Id -Force; Write-Error "About page capture hung"; exit 1 }
+          if (-not (Test-Path app-about.png)) { Write-Error "About screenshot missing"; exit 1 }
           '{"UseWiktionary":true}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-light.png",'--shot-word','CAT' -PassThru -Wait
           if (-not (Test-Path app-light.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Light screenshot missing"; exit 1 }
@@ -122,3 +137,4 @@ jobs:
             app-arabic-ui.png
             app-settings-his.png
             app-settings-ar.png
+            app-about.png

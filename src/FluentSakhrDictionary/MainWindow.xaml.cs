@@ -66,6 +66,7 @@ public partial class MainWindow : Window
             await Task.Delay(1200);
             if (App.ShotPage == "settings") { ContentFrame.Navigate(typeof(SettingsPage)); Log("settings page"); }
             if (App.ShotPage == "settings-nav") { Nav.SelectedItem = NavSettings; Log("settings page via nav transition"); }
+            if (App.ShotPage == "about") { Nav.SelectedItem = NavAbout; Log("about page via nav transition"); }
             if (App.ShotWord != null && ContentFrame.Content is SearchPage sp) { await sp.TypeAndSelect(App.ShotWord); Log("word typed"); }
             await Task.Delay(1500);
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
