@@ -27,6 +27,7 @@ public partial class AboutPage : Page
         DataEnText.Text = Loc.T("English-Arabic data: the original 1996 Sakhr dictionary", "بيانات إنجليزي-عربي: قاموس صخر الأصلي لعام 1996");
         DataArText.Text = Loc.T("Arabic-English data: English Wiktionary via kaikki.org (wiktextract), CC BY-SA 4.0", "بيانات عربي-إنجليزي: قاموس Wiktionary الإنجليزي عبر kaikki.org (wiktextract)، رخصة CC BY-SA 4.0");
         CreditLink.Content = Loc.T("brought to you by Instinct", "مقدَّم لكم من Instinct");
+        RepoLink.Content = Loc.T("Github Repo Link", "رابط المستودع على Github");
         UpdatesHeader.Text = Loc.T("Updates", "التحديثات");
         UpdatesNote.Text = Loc.T(
             "The app never checks for updates on its own. Press the button to check once, right now.",

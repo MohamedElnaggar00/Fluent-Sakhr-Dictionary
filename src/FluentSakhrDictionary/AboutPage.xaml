@@ -33,7 +33,7 @@
                     <TextBlock x:Name="LicenseText" FontSize="13"/>
                     <TextBlock x:Name="DataEnText" FontSize="13" TextWrapping="Wrap"/>
                     <TextBlock x:Name="DataArText" FontSize="13" TextWrapping="Wrap"/>
-                    <HyperlinkButton Content="github.com/MohamedElnaggar00/Sakhr-Dictionary-Revive"
+                    <HyperlinkButton x:Name="RepoLink" Content="Github Repo Link"
                                      NavigateUri="https://github.com/MohamedElnaggar00/Sakhr-Dictionary-Revive"
                                      FontSize="13" Padding="0"/>
                 </StackPanel>
