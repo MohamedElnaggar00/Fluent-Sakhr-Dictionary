@@ -32,16 +32,20 @@ public partial class MainWindow : Window
 
     async void RunScreenshot()
     {
+        void Log(string line) { try { Directory.CreateDirectory(App.AppData); File.AppendAllText(Path.Combine(App.AppData, "crash.log"), DateTime.Now + " SHOT " + line + "\n"); } catch { } }
         try
         {
+            Log("start theme=" + App.ShotTheme + " word=" + App.ShotWord + " path=" + App.ScreenshotPath);
             if (App.ShotTheme != null) ApplyTheme(App.ShotTheme);
             await Task.Delay(1200);
-            if (App.ShotWord != null && ContentFrame.Content is SearchPage sp) sp.TypeAndSelect(App.ShotWord);
+            if (App.ShotWord != null && ContentFrame.Content is SearchPage sp) { sp.TypeAndSelect(App.ShotWord); Log("word typed"); }
             await Task.Delay(1500);
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            Log("hwnd=" + hwnd);
             CaptureHelper.Save(hwnd, App.ScreenshotPath!);
+            Log("saved");
         }
-        catch { }
+        catch (Exception ex) { Log("FAILED " + ex); }
         Environment.Exit(0);
     }
 

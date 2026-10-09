@@ -58,9 +58,9 @@ jobs:
         shell: pwsh
         run: |
           $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-light.png",'--shot-word','CAT' -PassThru -Wait
-          if (-not (Test-Path app-light.png)) { Write-Error "Light screenshot missing"; exit 1 }
+          if (-not (Test-Path app-light.png)) { if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; Write-Error "Light screenshot missing"; exit 1 }
           $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-dark.png",'--shot-word','CAT','--theme','Dark' -PassThru -Wait
-          if (-not (Test-Path app-dark.png)) { Write-Error "Dark screenshot missing"; exit 1 }
+          if (-not (Test-Path app-dark.png)) { if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; Write-Error "Dark screenshot missing"; exit 1 }
           Write-Host "Screenshots captured"
 
       - uses: actions/upload-artifact@v4
