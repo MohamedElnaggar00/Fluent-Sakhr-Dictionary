@@ -7,6 +7,7 @@ public record Entry(string Word, string[] Meanings)
 {
     public bool Found => Meanings.Length > 0;
     public string DisplayWord => TitleCase(Word);
+    public Microsoft.UI.Xaml.FlowDirection ItemFlow => DictionaryService.HasArabicText(DisplayWord) ? Microsoft.UI.Xaml.FlowDirection.RightToLeft : Microsoft.UI.Xaml.FlowDirection.LeftToRight;
 
     /// <summary>"CAT FOOD" -&gt; "Cat Food": first letter of each word capital, the rest small.</summary>
     public static string TitleCase(string w)
@@ -25,12 +26,18 @@ public record Entry(string Word, string[] Meanings)
 public record ArabicResult(string ArabicTerm, string[] Glosses, string Pos, string[] SakhrLemmas)
 {
     public string DisplayWord => ArabicTerm;
+    public Microsoft.UI.Xaml.FlowDirection ItemFlow => Microsoft.UI.Xaml.FlowDirection.RightToLeft;
     public bool FromWiktionary => Glosses.Length > 0;
 }
 
 /// <summary>Loads the embedded Sakhr dataset once and answers instant prefix/exact lookups over a sorted array, both directions.</summary>
 public static class DictionaryService
 {
+    public static bool HasArabicText(string text)
+    {
+        foreach (char c in text) if (c >= '\u0600' && c <= '\u06FF') return true;
+        return false;
+    }
     static Entry[] _entries = Array.Empty<Entry>();
     static string[] _words = Array.Empty<string>();
     static string[] _revKeys = Array.Empty<string>();

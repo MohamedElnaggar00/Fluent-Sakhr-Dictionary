@@ -32,7 +32,7 @@
                       SelectionChanged="ResultsList_SelectionChanged">
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding DisplayWord}" FontSize="15" Padding="4,6"/>
+                        <TextBlock Text="{Binding DisplayWord}" FlowDirection="{Binding ItemFlow}" FontSize="15" Padding="4,6"/>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>

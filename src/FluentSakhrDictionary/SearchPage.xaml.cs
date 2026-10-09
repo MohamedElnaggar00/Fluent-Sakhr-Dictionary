@@ -65,11 +65,7 @@ public partial class SearchPage : Page
         return DictionaryService.InflectionOf(q);
     }
 
-    static bool HasArabic(string q)
-    {
-        foreach (char c in q) if (c >= '؀' && c <= 'ۿ') return true;
-        return false;
-    }
+    static bool HasArabic(string q) => DictionaryService.HasArabicText(q);
 
     int _searchVersion;
 
@@ -193,7 +189,8 @@ public partial class SearchPage : Page
         SakhrRepeater.Visibility = Visibility.Collapsed;
         if (entry.Found)
         {
-            WordSubtitle.Text = Loc.Meanings(entry.Meanings.Length);
+            WordSubtitle.FlowDirection = Loc.IsArabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+        WordSubtitle.Text = Loc.Meanings(entry.Meanings.Length);
             MeaningsRepeater.Visibility = Visibility.Visible;
             MeaningsRepeater.ItemsSource = entry.Meanings;
             NotFoundText.Visibility = Visibility.Collapsed;
@@ -234,6 +231,7 @@ public partial class SearchPage : Page
         SakhrRepeater.ItemsSource = null;
         SakhrRepeater.Visibility = Visibility.Collapsed;
         string note = inf.Note.Length > 0 ? char.ToUpperInvariant(inf.Note[0]) + inf.Note[1..] : "Form";
+        WordSubtitle.FlowDirection = Loc.IsArabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         WordSubtitle.Text = note + " of " + Entry.TitleCase(inf.Lemma) + " - " + Loc.Meanings(lemma.Meanings.Length);
         MeaningsRepeater.Visibility = Visibility.Visible;
         MeaningsRepeater.ItemsSource = lemma.Meanings;
@@ -291,6 +289,7 @@ public partial class SearchPage : Page
             EnglishRepeater.Visibility = Visibility.Collapsed;
             EnglishRepeater.ItemsSource = null;
         }
+        WordSubtitle.FlowDirection = Loc.IsArabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         WordSubtitle.Text = (rev.Pos.Length > 0 && subtitle.Count > 0 ? rev.Pos + " - " : "") + string.Join(" + ", subtitle);
         if (subtitle.Count == 0)
         {
@@ -303,6 +302,7 @@ public partial class SearchPage : Page
     {
         WordTitle.FlowDirection = FlowDirection.RightToLeft;
         WordTitle.Text = "قاموس صخر الحديث";
+        WordSubtitle.FlowDirection = FlowDirection.LeftToRight;
         WordSubtitle.Text = "Sakhr Dictionary Revive - English ⇄ Arabic";
         HomeOfflineText.Visibility = Visibility.Visible;
         MeaningsRepeater.Visibility = Visibility.Visible;

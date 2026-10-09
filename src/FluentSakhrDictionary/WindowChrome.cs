@@ -8,6 +8,11 @@ static class WindowChrome
     [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int val, int size);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] static extern IntPtr GetWindowLongPtr(IntPtr h, int i);
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] static extern IntPtr SetWindowLongPtr(IntPtr h, int i, IntPtr v);
+    [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+
+    const int GWL_STYLE = -16;
+    const long WS_CAPTION = 0x00C00000L; // includes WS_BORDER | WS_DLGFRAME - the residual frame that renders as light dots
+    const uint SWP_NOMOVE = 2, SWP_NOSIZE = 1, SWP_NOZORDER = 4, SWP_NOACTIVATE = 0x10, SWP_FRAMECHANGED = 0x20;
 
     const int GWL_EXSTYLE = -20;
     const long WS_EX_LAYOUTRTL = 0x00400000L;
@@ -27,6 +32,16 @@ static class WindowChrome
 
     public static void Apply(IntPtr hwnd)
     {
+        try
+        {
+            // Strip the caption/border styles (keep WS_THICKFRAME so the window stays resizable);
+            // the leftover border styles are what render as white dots along the top edge.
+            long st = GetWindowLongPtr(hwnd, GWL_STYLE).ToInt64();
+            st &= ~WS_CAPTION;
+            SetWindowLongPtr(hwnd, GWL_STYLE, new IntPtr(st));
+            SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+        }
+        catch { }
         try
         {
             int none = unchecked((int)0xFFFFFFFE), round = 2;
