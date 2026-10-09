@@ -96,6 +96,7 @@ public partial class SearchPage : Page
                 _currentArInflection = arinf;
                 ShowReverseInflection(arinf);
             }
+            else if (_currentRev.Count == 0) ShowNotFound(q);
         }
         else
         {
@@ -127,8 +128,27 @@ public partial class SearchPage : Page
             else
             {
                 _currentInflection = null;
+                if (_current.Count == 0) ShowNotFound(q);
             }
         }
+    }
+
+    /// <summary>Nothing matched: plain not-found pane.</summary>
+    void ShowNotFound(string q)
+    {
+        WordTitle.FlowDirection = HasArabic(q) ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+        WordTitle.Text = q;
+        WordSubtitle.Text = "";
+        MeaningsRepeater.ItemsSource = null;
+        MeaningsRepeater.Visibility = Visibility.Collapsed;
+        EnglishRepeater.ItemsSource = null;
+        EnglishRepeater.Visibility = Visibility.Collapsed;
+        WikHeader.Visibility = Visibility.Collapsed;
+        SakhrHeader.Visibility = Visibility.Collapsed;
+        SakhrRepeater.ItemsSource = null;
+        SakhrRepeater.Visibility = Visibility.Collapsed;
+        NotFoundText.Text = "Not found.";
+        NotFoundText.Visibility = Visibility.Visible;
     }
 
     void ResultsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -161,7 +181,7 @@ public partial class SearchPage : Page
         {
             WordSubtitle.Text = "";
             MeaningsRepeater.ItemsSource = null;
-            NotFoundText.Text = entry.DisplayWord + " is not in the original 1996 Sakhr search index (usually a rare inflection or a proper noun).";
+            NotFoundText.Text = "Not found.";
             NotFoundText.Visibility = Visibility.Visible;
         }
     }
