@@ -23,6 +23,13 @@ jobs:
             -p:DebugType=none -o publish; then
             echo "=== XamlCompiler output.json ==="
             cat src/FluentSakhrDictionary/obj/x64/Release/net8.0-windows10.0.19041.0/win-x64/output.json 2>/dev/null || echo "no output.json"
+            echo "=== direct XamlCompiler run ==="
+            XC="$USERPROFILE/.nuget/packages/microsoft.windowsappsdk/1.6.250108002/tools/net472/XamlCompiler.exe"
+            ls -la "$XC" || echo "XamlCompiler.exe missing"
+            IN=$(pwd)/src/FluentSakhrDictionary/obj/x64/Release/net8.0-windows10.0.19041.0/win-x64/input.json
+            OUT=$(pwd)/src/FluentSakhrDictionary/obj/x64/Release/net8.0-windows10.0.19041.0/win-x64/output.json
+            "$XC" "$IN" "$OUT"; echo "direct exit=$?"
+            cat "$OUT" 2>/dev/null || echo "still no output.json"
             exit 1
           fi
 
