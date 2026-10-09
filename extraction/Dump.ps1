@@ -266,19 +266,38 @@ $outPath = Join-Path $OutDir $OutName
 $sw = New-Object System.IO.StreamWriter($outPath, $false, (New-Object System.Text.UTF8Encoding($false)))
 
 $done = 0; $failStreak = 0
+
+function Read-WordMatch {
+  # after SetText+settle: is the queried word exactly selected in the word list?
+  $okS2 = $false
+  $sel2 = [WinD]::LbCurSel($ui.lbWord, [ref]$okS2)
+  if (-not $okS2 -or $sel2 -lt 0) { return '' }
+  $ptr2 = [WinD]::GetItemData($ui.lbWord, $sel2)
+  if ($ptr2.ToInt64() -le 0) { return '' }
+  $mem2 = [WinD]::ReadMem($script:hProc, $ptr2, 128)
+  if ($null -eq $mem2) { return '' }
+  return (Extract-Cp1256 $mem2)
+}
+
+function Test-Liveness {
+  # probe with 'cat'; returns $true if the app still filters correctly
+  [WinD]::SetText($ui.edit, 'cat') | Out-Null
+  Start-Sleep -Milliseconds $SettleMs
+  $m = Read-WordMatch
+  return ($m -ieq 'cat')
+}
+
 foreach ($w in $words) {
   $word = $w.Trim()
   if ($word -eq '') { continue }
 
+  # phase 1: set text, settle, check the word list WITHOUT clicking.
+  # clicking "Meaning" with no exact selection wedges the app's search state.
   $okSet = [WinD]::SetText($ui.edit, $word.ToLower())
-  $okClick = $false
-  if ($okSet) { $okClick = [WinD]::Click($ui.btn) }
-
-  if (-not ($okSet -and $okClick)) {
+  if (-not $okSet) {
     $failStreak++
-    Log "send failure on '$word' (streak $failStreak); set=$okSet click=$okClick"
+    Log "settext failure on '$word' (streak $failStreak)"
     if ($failStreak -ge 3) {
-      Dismiss-Modals $script:proc.Id
       $ui = Launch-App
       if (-not $ui) { Log "FATAL: relaunch failed"; break }
       Open-ProcHandle
@@ -287,21 +306,46 @@ foreach ($w in $words) {
     continue
   }
   $failStreak = 0
-
-  # no polling: quiet settle, then a single read (mid-lookup messages kill the app)
   Start-Sleep -Milliseconds $SettleMs
+  $match = Read-WordMatch
 
-  # matched lemma from the word listbox current selection (owner-drawn: item data is a record pointer)
-  $match = ''
-  $okSel = $false
-  $sel = [WinD]::LbCurSel($ui.lbWord, [ref]$okSel)
-  if ($okSel -and $sel -ge 0) {
-    $wptr = [WinD]::GetItemData($ui.lbWord, $sel)
-    if ($wptr.ToInt64() -gt 0) {
-      $wmem = [WinD]::ReadMem($script:hProc, $wptr, 128)
-      if ($null -ne $wmem) { $match = Extract-Cp1256 $wmem }
+  if ($match -ine $word) {
+    # no exact selection: either genuine miss or a wedged app. Verify liveness.
+    if (Test-Liveness) {
+      # app is fine -> genuine miss; restore nothing, next word will SetText over
+      Log "miss: '$word' (listbox match='$match') - not found"
+      $rec = [ordered]@{ word = $word; match = ''; meanings = @() }
+      $sw.WriteLine(($rec | ConvertTo-Json -Compress))
+      $done++
+      continue
+    }
+    # wedged: relaunch and retry the word once
+    Log "app wedged after '$word' - relaunching"
+    $ui = Launch-App
+    if (-not $ui) { Log "FATAL: relaunch failed"; break }
+    Open-ProcHandle
+    [WinD]::SetText($ui.edit, $word.ToLower()) | Out-Null
+    Start-Sleep -Milliseconds $SettleMs
+    $match = Read-WordMatch
+    if ($match -ine $word) {
+      Log "miss after relaunch: '$word' - not found"
+      $rec = [ordered]@{ word = $word; match = ''; meanings = @() }
+      $sw.WriteLine(($rec | ConvertTo-Json -Compress))
+      $done++
+      continue
     }
   }
+
+  # phase 2: exact match selected -> click Meaning, settle, read meanings
+  $okClick = [WinD]::Click($ui.btn)
+  if (-not $okClick) {
+    Log "click failure on '$word'"
+    $ui = Launch-App
+    if (-not $ui) { Log "FATAL: relaunch failed"; break }
+    Open-ProcHandle
+    continue
+  }
+  Start-Sleep -Milliseconds $SettleMs
 
   $meanings = @()
   $okMC = $false
@@ -316,12 +360,8 @@ foreach ($w in $words) {
   }
 
   if ($done -lt 15) {
-    $okW = $false
-    $wc = [WinD]::LbCount($ui.lbWord, [ref]$okW)
-    $etxt = [WinD]::Txt($ui.edit)
-    Log "word='$word' okSel=$okSel sel=$sel okMC=$okMC mc=$mc lbWordCnt=$wc editTxt=[$etxt] match='$match' n=$($meanings.Count)"
+    Log "word='$word' match='$match' mc=$mc n=$($meanings.Count)"
   }
-  if ($done -eq 9 -or $done -eq 12) { Shot "diag-word$done.png" }
   $rec = [ordered]@{ word = $word; match = $match; meanings = $meanings }
   $sw.WriteLine(($rec | ConvertTo-Json -Compress))
   $done++
