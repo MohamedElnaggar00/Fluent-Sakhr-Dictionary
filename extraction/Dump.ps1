@@ -195,15 +195,21 @@ Log "UI ready: dlg=0x$($ui.dlg.ToInt64().ToString('X')) edit=0x$($ui.edit.ToInt6
 Start-Sleep -Seconds 2
 Log "dialog shown + foregrounded"
 
-# wait for the dictionary engine to finish loading (dialog appears before data)
+# wait for the dictionary engine: trigger ONE lookup, then wait quietly.
+# (spamming SetText/Click every 500ms appears to keep the engine from ever
+# finishing its lazy data load)
 $ready = $false
-for ($i = 0; $i -lt 120; $i++) {
-  [WinD]::SetText($ui.edit, 'CAT') | Out-Null
-  [WinD]::Click($ui.btn) | Out-Null
-  Start-Sleep -Milliseconds 500
-  $c = [WinD]::LbCount($ui.lbMean, [ref]$okR)
-  if ($okR -and $c -gt 0) { $ready = $true; Log "engine ready after ~$([math]::Round(($i+1)*0.5,1))s (CAT -> $c meanings)"; break }
-  if ($i % 10 -eq 9) { Log "waiting for engine... ($i)" }
+for ($attempt = 0; $attempt -lt 4 -and -not $ready; $attempt++) {
+  $okS = [WinD]::SetText($ui.edit, 'CAT')
+  Start-Sleep -Milliseconds 300
+  $okC = [WinD]::Click($ui.btn)
+  Log "readiness attempt $attempt`: set=$okS click=$okC - waiting quietly"
+  for ($i = 0; $i -lt 45; $i++) {
+    Start-Sleep -Seconds 1
+    $c = [WinD]::LbCount($ui.lbMean, [ref]$okR)
+    if ($okR -and $c -gt 0) { $ready = $true; Log "engine ready (CAT -> $c meanings)"; break }
+    if ($i % 15 -eq 14) { Log "still waiting for engine... (${i}s)" }
+  }
 }
 if (-not $ready) { Log "FATAL: engine never returned meanings for CAT"; exit 1 }
 
