@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [v-searchA, v-searchB]
+        variant: [vX-noRepeater, vY-noListView, vZ-noBoxRes, vW-noPageRes]
     steps:
       - uses: actions/checkout@v4
 
