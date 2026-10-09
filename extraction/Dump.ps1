@@ -8,7 +8,7 @@ param(
   [int]$Start = 0,
   [int]$Count = 20,
   [string]$OutName = "dump.jsonl",
-  [int]$SettleMs = 1200
+  [int]$SettleMs = 3000
 )
 $ErrorActionPreference = 'Continue'
 $OutDir = "$env:RUNNER_TEMP\dump-results"
@@ -313,6 +313,7 @@ foreach ($w in $words) {
     }
   }
 
+  if ($done -lt 15) { Log "word='$word' okSel=$okSel sel=$sel okMC=$okMC mc=$mc match='$match' n=$($meanings.Count)" }
   $rec = [ordered]@{ word = $word; match = $match; meanings = $meanings }
   $sw.WriteLine(($rec | ConvertTo-Json -Compress))
   $done++
