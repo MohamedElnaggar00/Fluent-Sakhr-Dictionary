@@ -152,6 +152,18 @@ def add_ar(form, lemma, note):
     if lf not in ar_pairs:
         ar_pairs[lf] = (form, lemma, note)
 
+def normalize_note(note):
+    t = note.split()
+    # wiktextract tag order -> natural English: "present singular third-person"
+    # becomes "third-person singular present".
+    if len(t) == 3 and t[2].endswith("-person") and t[1] in ("singular", "plural", "dual"):
+        return f"{t[2]} {t[1]} {t[0]}"
+    if t == ["participle", "past"]:
+        return "past participle"
+    if t == ["participle", "present"]:
+        return "present participle"
+    return note
+
 def sense_note(sense):
     for g in sense.get("glosses") or []:
         m = FORM_OF_RE.match(g)
@@ -193,7 +205,7 @@ for line in sys.stdin.buffer:
 with open("data/inflections-en.jsonl", "w", encoding="utf-8") as out:
     for form in sorted(en_pairs):
         lemma, note = en_pairs[form]
-        out.write(json.dumps({"form": form, "lemma": lemma, "note": note}, ensure_ascii=False) + "\n")
+        out.write(json.dumps({"form": form, "lemma": lemma, "note": normalize_note(note)}, ensure_ascii=False) + "\n")
 with open("data/inflections-ar.jsonl", "w", encoding="utf-8") as out:
     for lf in sorted(ar_pairs):
         form, lemma, note = ar_pairs[lf]

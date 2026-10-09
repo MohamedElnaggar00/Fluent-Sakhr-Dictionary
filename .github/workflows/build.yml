@@ -54,7 +54,7 @@ jobs:
           Write-Host "App still running after 10s"
           Stop-Process -Id $p.Id -Force
 
-      - name: Capture app screenshots (CAT light + dark, Arabic قط)
+      - name: Capture app screenshots (CAT light + dark, Arabic قط, inflections)
         shell: pwsh
         run: |
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-light.png",'--shot-word','CAT' -PassThru -Wait
@@ -65,6 +65,10 @@ jobs:
           if (-not (Test-Path app-arabic.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Arabic screenshot missing"; exit 1 }
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-settings.png",'--shot-page','settings' -PassThru -Wait
           if (-not (Test-Path app-settings.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Settings screenshot missing"; exit 1 }
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-inflection.png",'--shot-word','ABANDONS' -PassThru -Wait
+          if (-not (Test-Path app-inflection.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Inflection screenshot missing"; exit 1 }
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-inflection-ar.png",'--shot-word','يكتبون' -PassThru -Wait
+          if (-not (Test-Path app-inflection-ar.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Arabic inflection screenshot missing"; exit 1 }
           Write-Host "Screenshots captured"
 
       - uses: actions/upload-artifact@v4
@@ -76,3 +80,5 @@ jobs:
             app-dark.png
             app-arabic.png
             app-settings.png
+            app-inflection.png
+            app-inflection-ar.png
