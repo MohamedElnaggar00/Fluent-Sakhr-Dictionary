@@ -65,6 +65,7 @@ public partial class SearchPage : Page
     {
         string q = SearchBox.Text.Trim();
         _useWiktionary = Settings.Load().UseWiktionary;
+        HomeOfflineText.Visibility = Visibility.Collapsed;
         if (q.Length == 0)
         {
             _current = Array.Empty<Entry>();
@@ -236,7 +237,7 @@ public partial class SearchPage : Page
             SakhrHeader.Visibility = Visibility.Visible;
             SakhrRepeater.Visibility = Visibility.Visible;
             SakhrRepeater.ItemsSource = rev.SakhrLemmas.Select(Entry.TitleCase).ToArray();
-            subtitle.Add(rev.SakhrLemmas.Length == 1 ? "1 English word (Sakhr 1996)" : rev.SakhrLemmas.Length + " English words (Sakhr 1996)");
+            subtitle.Add(rev.SakhrLemmas.Length == 1 ? "1 English word" : rev.SakhrLemmas.Length + " English words");
         }
         else
         {
@@ -266,6 +267,7 @@ public partial class SearchPage : Page
         WordTitle.FlowDirection = FlowDirection.RightToLeft;
         WordTitle.Text = "قاموس صخر الحديث";
         WordSubtitle.Text = "Sakhr Dictionary Revive - English ⇄ Arabic";
+        HomeOfflineText.Visibility = Visibility.Visible;
         MeaningsRepeater.Visibility = Visibility.Visible;
         MeaningsRepeater.ItemsSource = null;
         EnglishRepeater.ItemsSource = null;
