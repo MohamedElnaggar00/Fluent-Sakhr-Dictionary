@@ -82,6 +82,7 @@ jobs:
           $ok = $p.WaitForExit(120000)
           if (-not $ok) { Stop-Process -Id $p.Id -Force; Write-Error "About full capture hung"; exit 1 }
           if (-not (Test-Path app-about-full.png)) { Write-Error "About full screenshot missing"; exit 1 }
+          '{"UseWiktionary":true,"Language":"ar"}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-arabic-ui-cat.png",'--shot-word','CAT' -PassThru -Wait
           if (-not (Test-Path app-arabic-ui-cat.png)) { Write-Error "Arabic UI CAT screenshot missing"; exit 1 }
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-arabic-ui-ar.png",'--shot-word','قط' -PassThru -Wait
