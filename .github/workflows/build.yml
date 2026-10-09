@@ -71,6 +71,13 @@ jobs:
           $ok = $p.WaitForExit(120000)
           if (-not $ok) { Stop-Process -Id $p.Id -Force; if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "REPRODUCED: settings page HUNG with his settings (killed after 120s)"; exit 1 }
           if (-not (Test-Path app-settings-his.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "His-settings screenshot missing"; exit 1 }
+          # Probe 2: the ARABIC settings page (state right after clicking العربية) - never CI-tested.
+          '{"Theme":"Default","Backdrop":"Acrylic","Accent":"#8764B8","UseWiktionary":false,"Welcomed":true,"Language":"ar"}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-settings-ar.png",'--shot-page','settings-nav' -PassThru
+          $ok = $p.WaitForExit(120000)
+          if (-not $ok) { Stop-Process -Id $p.Id -Force; if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "REPRODUCED: ARABIC settings page HUNG (killed after 120s)"; exit 1 }
+          if (-not (Test-Path app-settings-ar.png)) { Write-Error "Arabic settings screenshot missing"; exit 1 }
+          '{"UseWiktionary":true,"Welcomed":true}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
           '{"UseWiktionary":true,"Welcomed":true}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-light.png",'--shot-word','CAT' -PassThru -Wait
           if (-not (Test-Path app-light.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Light screenshot missing"; exit 1 }
@@ -113,3 +120,5 @@ jobs:
             app-enriched.png
             app-sakhr-only-wik.png
             app-arabic-ui.png
+            app-settings-his.png
+            app-settings-ar.png
