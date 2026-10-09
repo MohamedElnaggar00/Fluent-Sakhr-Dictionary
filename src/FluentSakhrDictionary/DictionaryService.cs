@@ -37,6 +37,8 @@ public static class DictionaryService
     static RevBucket[] _revBuckets = Array.Empty<RevBucket>();
     static string[] _wikKeys = Array.Empty<string>();
     static WikBucket[] _wikBuckets = Array.Empty<WikBucket>();
+    static string[] _infForms = Array.Empty<string>();
+    static InfBucket[] _infBuckets = Array.Empty<InfBucket>();
     static readonly object _gate = new();
     static bool _loaded;
 
@@ -51,6 +53,12 @@ public static class DictionaryService
         public string Display = "";
         public string Pos = "";
         public readonly List<string> Glosses = new();
+    }
+
+    sealed class InfBucket
+    {
+        public string Lemma = "";
+        public string Note = "";
     }
 
     public static int Count => _entries.Length;
@@ -141,6 +149,28 @@ public static class DictionaryService
             _wikKeys = wik.Keys.ToArray();
             Array.Sort(_wikKeys, StringComparer.Ordinal);
             _wikBuckets = _wikKeys.Select(k => wik[k]).ToArray();
+
+            // English inflections (Wiktionary form -> lemma, CC BY-SA 4.0), so a typed
+            // form like ABANDONS resolves to ABANDON. Optional file; absent = no redirect.
+            var inf = new Dictionary<string, InfBucket>(StringComparer.Ordinal);
+            string infPath = Path.Combine(AppContext.BaseDirectory, "data", "inflections-en.jsonl");
+            if (File.Exists(infPath))
+            {
+                foreach (var line in File.ReadLines(infPath))
+                {
+                    if (line.Length == 0) continue;
+                    using var doc = JsonDocument.Parse(line);
+                    var root = doc.RootElement;
+                    string form = root.GetProperty("form").GetString() ?? "";
+                    string lemma = root.GetProperty("lemma").GetString() ?? "";
+                    string note = root.TryGetProperty("note", out var n) ? n.GetString() ?? "" : "";
+                    if (form.Length == 0 || lemma.Length == 0) continue;
+                    if (!inf.ContainsKey(form)) inf[form] = new InfBucket { Lemma = lemma, Note = note };
+                }
+            }
+            _infForms = inf.Keys.ToArray();
+            Array.Sort(_infForms, StringComparer.Ordinal);
+            _infBuckets = _infForms.Select(k => inf[k]).ToArray();
             _loaded = true;
         }
     }
@@ -258,4 +288,19 @@ public static class DictionaryService
         int i = Array.BinarySearch(_words, word, StringComparer.Ordinal);
         return i >= 0 ? _entries[i] : null;
     }
+
+    /// <summary>English inflection -> base lemma (Wiktionary, CC BY-SA 4.0). Null when the
+    /// query is not a known form of a word we carry. Lemma is the raw uppercase word.</summary>
+    public static Inflection? InflectionOf(string query)
+    {
+        EnsureLoaded();
+        query = query.Trim().ToUpperInvariant();
+        if (query.Length == 0) return null;
+        int i = Array.BinarySearch(_infForms, query, StringComparer.Ordinal);
+        if (i < 0) return null;
+        var b = _infBuckets[i];
+        return new Inflection(Entry.TitleCase(query), b.Lemma, b.Note);
+    }
 }
+
+public record Inflection(string FormDisplay, string Lemma, string Note);

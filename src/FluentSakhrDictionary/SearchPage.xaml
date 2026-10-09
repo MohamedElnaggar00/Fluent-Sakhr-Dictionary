@@ -19,7 +19,7 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <TextBox x:Name="SearchBox"
-                     PlaceholderText="Type in English or Arabic..."
+                     PlaceholderText="Type a word - اكتب كلمة"
                      FontSize="16"
                      TextChanged="SearchBox_TextChanged"
                      KeyDown="SearchBox_KeyDown">

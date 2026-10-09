@@ -9,6 +9,7 @@ public partial class SearchPage : Page
     readonly DispatcherTimer _debounce = new() { Interval = TimeSpan.FromMilliseconds(120) };
     IReadOnlyList<Entry> _current = Array.Empty<Entry>();
     IReadOnlyList<ArabicResult> _currentRev = Array.Empty<ArabicResult>();
+    Inflection? _currentInflection;
 
     public SearchPage()
     {
@@ -26,6 +27,7 @@ public partial class SearchPage : Page
         RunSearch();
         if (_current.Count > 0) { ResultsList.SelectedIndex = 0; ShowEntry(_current[0]); }
         else if (_currentRev.Count > 0) { ResultsList.SelectedIndex = 0; ShowReverse(_currentRev[0]); }
+        else if (_currentInflection != null) ShowInflection(_currentInflection);
     }
 
     void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -40,6 +42,7 @@ public partial class SearchPage : Page
         {
             if (_current.Count > 0) { ResultsList.SelectedIndex = 0; ShowEntry(_current[0]); }
             else if (_currentRev.Count > 0) { ResultsList.SelectedIndex = 0; ShowReverse(_currentRev[0]); }
+            else if (_currentInflection != null) ShowInflection(_currentInflection);
         }
         if (e.Key == Windows.System.VirtualKey.Down && ResultsList.Items.Count > 0)
         {
@@ -61,6 +64,7 @@ public partial class SearchPage : Page
         {
             _current = Array.Empty<Entry>();
             _currentRev = Array.Empty<ArabicResult>();
+            _currentInflection = null;
             ResultsList.ItemsSource = null;
             ResetPane();
             return;
@@ -68,6 +72,7 @@ public partial class SearchPage : Page
         if (HasArabic(q))
         {
             _current = Array.Empty<Entry>();
+            _currentInflection = null;
             _currentRev = DictionaryService.SearchArabic(q);
             ResultsList.FlowDirection = FlowDirection.RightToLeft;
             ResultsList.ItemsSource = _currentRev;
@@ -85,11 +90,23 @@ public partial class SearchPage : Page
             _current = DictionaryService.Search(q);
             ResultsList.FlowDirection = FlowDirection.LeftToRight;
             ResultsList.ItemsSource = _current;
-            if (_current.Count == 1 || _current.Any(x => x.Word.Equals(q, StringComparison.OrdinalIgnoreCase)))
+            var exact = _current.FirstOrDefault(x => x.Word.Equals(q, StringComparison.OrdinalIgnoreCase));
+            if (_current.Count == 1 || exact != null)
             {
-                var exact = _current.FirstOrDefault(x => x.Word.Equals(q, StringComparison.OrdinalIgnoreCase)) ?? _current[0];
-                ResultsList.SelectedItem = exact;
-                ShowEntry(exact);
+                var pick = exact ?? _current[0];
+                ResultsList.SelectedItem = pick;
+                ShowEntry(pick);
+                _currentInflection = null;
+            }
+            else if (_current.Count == 0 && DictionaryService.InflectionOf(q) is { } inf)
+            {
+                // Typed form not in the 1996 index, but a known inflection (ABANDONS -> ABANDON).
+                _currentInflection = inf;
+                ShowInflection(inf);
+            }
+            else
+            {
+                _currentInflection = null;
             }
         }
     }
@@ -126,6 +143,26 @@ public partial class SearchPage : Page
             NotFoundText.Text = entry.DisplayWord + " is not in the original 1996 Sakhr search index (usually a rare inflection or a proper noun).";
             NotFoundText.Visibility = Visibility.Visible;
         }
+    }
+
+    /// <summary>Typed inflection resolved to its base lemma: show the lemma's meanings under
+    /// the typed form, with a "form of" note (ABANDONS - third-person singular of ABANDON).</summary>
+    void ShowInflection(Inflection inf)
+    {
+        var lemma = DictionaryService.Exact(inf.Lemma);
+        if (lemma is not { Found: true }) { _currentInflection = null; ResetPane(); return; }
+        WordTitle.FlowDirection = FlowDirection.LeftToRight;
+        WordTitle.Text = inf.FormDisplay;
+        EnglishRepeater.ItemsSource = null;
+        EnglishRepeater.Visibility = Visibility.Collapsed;
+        SakhrHeader.Visibility = Visibility.Collapsed;
+        SakhrRepeater.ItemsSource = null;
+        SakhrRepeater.Visibility = Visibility.Collapsed;
+        string note = inf.Note.Length > 0 ? char.ToUpperInvariant(inf.Note[0]) + inf.Note[1..] : "Form";
+        WordSubtitle.Text = note + " of " + Entry.TitleCase(inf.Lemma) + (lemma.Meanings.Length == 1 ? " - 1 meaning" : " - " + lemma.Meanings.Length + " meanings");
+        MeaningsRepeater.Visibility = Visibility.Visible;
+        MeaningsRepeater.ItemsSource = lemma.Meanings;
+        NotFoundText.Visibility = Visibility.Collapsed;
     }
 
     void ShowReverse(ArabicResult rev)

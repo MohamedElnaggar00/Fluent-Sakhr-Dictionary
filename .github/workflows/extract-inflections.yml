@@ -1,0 +1,24 @@
+name: Extract English inflections
+on:
+  workflow_dispatch:
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download raw Wiktextract English extract (2.8GB gz, kaikki.org)
+        run: curl -fL --retry 3 -o /tmp/en.jsonl.gz https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz
+      - name: Extract form -> lemma pairs for our wordlist
+        run: zcat /tmp/en.jsonl.gz | grep --line-buffered -F -e '"form_of"' -e '"alt_of"' -e '"forms"' | python3 tools/extract_inflections_en.py
+      - name: Sanity check
+        run: |
+          wc -l data/inflections-en.jsonl
+          grep -m1 '"ABANDONS"' data/inflections-en.jsonl
+          grep -m1 '"TOMATOES"' data/inflections-en.jsonl
+          grep -m1 '"WENT"' data/inflections-en.jsonl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inflections-en
+          path: data/inflections-en.jsonl
