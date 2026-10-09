@@ -8,7 +8,7 @@ param(
   [int]$Start = 0,
   [int]$Count = 20,
   [string]$OutName = "dump.jsonl",
-  [int]$SettleMs = 1000
+  [int]$SettleMs = 3000
 )
 $ErrorActionPreference = 'Continue'
 $OutDir = "$env:RUNNER_TEMP\dump-results"
