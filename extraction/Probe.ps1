@@ -31,6 +31,8 @@ Log "process started: id=$($proc.Id) hasExited=$($proc.HasExited)"
 Get-Process | Where-Object { $_.Id -eq $proc.Id } |
   Select-Object Id, ProcessName, MainWindowTitle, MainWindowHandle, Responding |
   Format-List | Out-File "$OutDir\process.txt"
+$pi = Get-Process -Id $proc.Id
+Log "MainWindowHandle=0x$($pi.MainWindowHandle.ToString('X')) title=[$($pi.MainWindowTitle)] responding=$($pi.Responding)"
 
 function Shot($name) {
   $vs = [System.Windows.Forms.SystemInformation]::VirtualScreen
@@ -65,8 +67,7 @@ public class WinProbe {
       var t = new StringBuilder(256); GetWindowText(h, t, 256);
       var c = new StringBuilder(256); GetClassName(h, c, 256);
       uint pid; GetWindowThreadProcessId(h, out pid);
-      if (IsWindowVisible(h))
-        r.Add(string.Format("0x{0:X} pid={1} class=[{2}] title=[{3}]", h.ToInt64(), pid, c, t));
+      r.Add((IsWindowVisible(h) ? "vis " : "hid ") + string.Format("0x{0:X} pid={1} class=[{2}] title=[{3}]", h.ToInt64(), pid, c, t));
       return true;
     }, IntPtr.Zero);
     return r;
@@ -89,9 +90,10 @@ $tops | Out-File "$OutDir\windows.txt"
 Log "visible top-level windows: $($tops.Count)"
 $appHwnd = $null
 foreach ($line in $tops) {
-  if ($line -match 'DictWClass|32770' -and $line -match "pid=$($proc.Id)") { $appHwnd = $line }
-  if ($line -match "pid=$($proc.Id)") { $appHwnd = $line }
+  if ($line -match "pid=$($proc.Id) ") { $appHwnd = $line }
+  elseif ($line -match "pid=$($proc.Id)$") { $appHwnd = $line }
 }
+if (-not $appHwnd) { Log "no top-level window owned by pid $($proc.Id) - dumping all windows for review" }
 Log "app window line: $appHwnd"
 if ($appHwnd -match '0x([0-9A-F]+)') {
   $hwnd = [IntPtr]([Convert]::ToInt64($Matches[1], 16))
