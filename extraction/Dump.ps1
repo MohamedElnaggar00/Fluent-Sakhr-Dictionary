@@ -13,7 +13,11 @@ $ErrorActionPreference = 'Continue'
 $OutDir = "$env:RUNNER_TEMP\dump-results"
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 $log = "$OutDir\dump.log"
-function Log($m) { "{0:HH:mm:ss.fff} {1}" -f (Get-Date), $m | Tee-Object -FilePath $log -Append }
+function Log($m) {
+  $line = "{0:HH:mm:ss.fff} {1}" -f (Get-Date), $m
+  Add-Content -Path $log -Value $line -Encoding utf8
+  Write-Host $line
+}
 
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
@@ -160,17 +164,25 @@ function Launch-App {
   $script:proc = Start-Process -FilePath $exePath -WorkingDirectory $ascii -PassThru
   Log "launched pid=$($script:proc.Id)"
   $ui = $null
-  for ($i = 0; $i -lt 40; $i++) {
+  for ($i = 0; $i -lt 90; $i++) {
     Start-Sleep -Milliseconds 500
+    if ($script:proc.HasExited) { Log "process exited early, code=$($script:proc.ExitCode)"; return $null }
     $ui = Find-UI
     if ($ui -and $ui.edit -ne [IntPtr]::Zero -and $ui.lbMean -ne [IntPtr]::Zero) { return $ui }
+    if ($i % 10 -eq 9) {
+      $seen = @()
+      foreach ($h in [WinD]::TopHwnds()) {
+        if ([WinD]::Pid($h) -eq $script:proc.Id) { $seen += ("0x{0:X} [{1}] [{2}]" -f $h.ToInt64(), [WinD]::Cls($h), [WinD]::Txt($h)) }
+      }
+      Log "wait $i`: app windows so far: $($seen -join ' | ')"
+    }
   }
   return $null
 }
 
 # --- main loop ---------------------------------------------------------------
 $ui = Launch-App
-if (-not $ui) { Log "FATAL: app UI not found"; exit 1 }
+if (-not $ui -or $ui.edit -eq [IntPtr]::Zero) { Log "FATAL: app UI not found"; exit 1 }
 Log "UI ready: dlg=0x$($ui.dlg.ToInt64().ToString('X')) edit=0x$($ui.edit.ToInt64().ToString('X')) btn=0x$($ui.btn.ToInt64().ToString('X')) lbWord=0x$($ui.lbWord.ToInt64().ToString('X')) lbMean=0x$($ui.lbMean.ToInt64().ToString('X'))"
 
 $words = Get-Content $WordsFile -Encoding utf8 | Select-Object -Skip $Start -First $Count
