@@ -39,6 +39,7 @@ public static class DictionaryService
     static WikBucket[] _wikBuckets = Array.Empty<WikBucket>();
     static string[] _infForms = Array.Empty<string>();
     static InfBucket[] _infBuckets = Array.Empty<InfBucket>();
+    static readonly Dictionary<string, (string Lemma, string Note)> _infAr = new(StringComparer.Ordinal);
     static readonly object _gate = new();
     static bool _loaded;
 
@@ -171,6 +172,24 @@ public static class DictionaryService
             _infForms = inf.Keys.ToArray();
             Array.Sort(_infForms, StringComparer.Ordinal);
             _infBuckets = _infForms.Select(k => inf[k]).ToArray();
+
+            // Arabic inflections (same Wiktionary source): normalized form -> (lemma, note).
+            string infArPath = Path.Combine(AppContext.BaseDirectory, "data", "inflections-ar.jsonl");
+            if (File.Exists(infArPath))
+            {
+                foreach (var line in File.ReadLines(infArPath))
+                {
+                    if (line.Length == 0) continue;
+                    using var doc = JsonDocument.Parse(line);
+                    var root = doc.RootElement;
+                    string form = root.GetProperty("form").GetString() ?? "";
+                    string lemma = root.GetProperty("lemma").GetString() ?? "";
+                    string note = root.TryGetProperty("note", out var n) ? n.GetString() ?? "" : "";
+                    string key = NormalizeArabic(form);
+                    if (key.Length == 0 || lemma.Length == 0) continue;
+                    if (!_infAr.ContainsKey(key)) _infAr[key] = (lemma, note);
+                }
+            }
             _loaded = true;
         }
     }
@@ -244,25 +263,44 @@ public static class DictionaryService
         foreach (string key in keys)
         {
             if (list.Count >= max) break;
-            string display = "", pos = "";
-            string[] glosses = Array.Empty<string>(), lemmas = Array.Empty<string>();
-            int wi = Array.BinarySearch(_wikKeys, key, StringComparer.Ordinal);
-            if (wi >= 0)
-            {
-                var b = _wikBuckets[wi];
-                display = b.Display;
-                pos = b.Pos;
-                glosses = b.Glosses.ToArray();
-            }
-            int ri = Array.BinarySearch(_revKeys, key, StringComparer.Ordinal);
-            if (ri >= 0)
-            {
-                lemmas = _revBuckets[ri].Lemmas.ToArray();
-                if (display.Length == 0) display = _revBuckets[ri].Display;
-            }
-            list.Add(new ArabicResult(display, glosses, pos, lemmas));
+            if (ArabicByKey(key) is { } result) list.Add(result);
         }
         return list;
+    }
+
+    /// <summary>Assembles one Arabic result from the Wiktionary and Sakhr reverse indexes for
+    /// an already-normalized key; null when neither index carries it.</summary>
+    static ArabicResult? ArabicByKey(string key)
+    {
+        string display = "", pos = "";
+        string[] glosses = Array.Empty<string>(), lemmas = Array.Empty<string>();
+        int wi = Array.BinarySearch(_wikKeys, key, StringComparer.Ordinal);
+        if (wi >= 0)
+        {
+            var b = _wikBuckets[wi];
+            display = b.Display;
+            pos = b.Pos;
+            glosses = b.Glosses.ToArray();
+        }
+        int ri = Array.BinarySearch(_revKeys, key, StringComparer.Ordinal);
+        if (ri >= 0)
+        {
+            lemmas = _revBuckets[ri].Lemmas.ToArray();
+            if (display.Length == 0) display = _revBuckets[ri].Display;
+        }
+        if (wi < 0 && ri < 0) return null;
+        return new ArabicResult(display, glosses, pos, lemmas);
+    }
+
+    /// <summary>Arabic inflection -> base lemma (Wiktionary, CC BY-SA 4.0), e.g. a conjugated
+    /// verb or plural back to its dictionary form. Null when unknown or the lemma is absent.</summary>
+    public static ArabicInflection? InflectionOfArabic(string query)
+    {
+        EnsureLoaded();
+        string q = NormalizeArabic(query);
+        if (q.Length == 0 || !_infAr.TryGetValue(q, out var hit)) return null;
+        if (ArabicByKey(NormalizeArabic(hit.Lemma)) is not { } lemma) return null;
+        return new ArabicInflection(query.Trim(), lemma, hit.Note);
     }
 
     static void CollectPrefix(string[] keys, string q, SortedSet<string> into, int max)
@@ -304,3 +342,5 @@ public static class DictionaryService
 }
 
 public record Inflection(string FormDisplay, string Lemma, string Note);
+
+public record ArabicInflection(string FormDisplay, ArabicResult Lemma, string Note);

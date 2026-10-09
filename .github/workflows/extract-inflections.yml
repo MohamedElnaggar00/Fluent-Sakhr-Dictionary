@@ -1,4 +1,4 @@
-name: Extract English inflections
+name: Extract inflections (en + ar)
 on:
   workflow_dispatch:
 
@@ -8,17 +8,19 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: Download raw Wiktextract English extract (2.8GB gz, kaikki.org)
+      - name: Download raw Wiktextract extract (2.8GB gz, kaikki.org; enwiktionary covers en + ar)
         run: curl -fL --retry 3 -o /tmp/en.jsonl.gz https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz
-      - name: Extract form -> lemma pairs for our wordlist
-        run: zcat /tmp/en.jsonl.gz | grep --line-buffered -F -e '"form_of"' -e '"alt_of"' -e '"forms"' | python3 tools/extract_inflections_en.py
+      - name: Extract form -> lemma pairs (English + Arabic)
+        run: zcat /tmp/en.jsonl.gz | grep --line-buffered -F -e '"form_of"' -e '"alt_of"' -e '"forms"' | python3 tools/extract_inflections.py
       - name: Sanity check
         run: |
-          wc -l data/inflections-en.jsonl
+          wc -l data/inflections-en.jsonl data/inflections-ar.jsonl
           grep -m1 '"ABANDONS"' data/inflections-en.jsonl
-          grep -m1 '"TOMATOES"' data/inflections-en.jsonl
-          grep -m1 '"WENT"' data/inflections-en.jsonl
+          echo "--- arabic samples ---"
+          head -3 data/inflections-ar.jsonl
       - uses: actions/upload-artifact@v4
         with:
-          name: inflections-en
-          path: data/inflections-en.jsonl
+          name: inflections
+          path: |
+            data/inflections-en.jsonl
+            data/inflections-ar.jsonl

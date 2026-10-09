@@ -10,6 +10,7 @@ public partial class SearchPage : Page
     IReadOnlyList<Entry> _current = Array.Empty<Entry>();
     IReadOnlyList<ArabicResult> _currentRev = Array.Empty<ArabicResult>();
     Inflection? _currentInflection;
+    ArabicInflection? _currentArInflection;
 
     public SearchPage()
     {
@@ -28,6 +29,7 @@ public partial class SearchPage : Page
         if (_current.Count > 0) { ResultsList.SelectedIndex = 0; ShowEntry(_current[0]); }
         else if (_currentRev.Count > 0) { ResultsList.SelectedIndex = 0; ShowReverse(_currentRev[0]); }
         else if (_currentInflection != null) ShowInflection(_currentInflection);
+        else if (_currentArInflection != null) ShowReverseInflection(_currentArInflection);
     }
 
     void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -43,6 +45,7 @@ public partial class SearchPage : Page
             if (_current.Count > 0) { ResultsList.SelectedIndex = 0; ShowEntry(_current[0]); }
             else if (_currentRev.Count > 0) { ResultsList.SelectedIndex = 0; ShowReverse(_currentRev[0]); }
             else if (_currentInflection != null) ShowInflection(_currentInflection);
+        else if (_currentArInflection != null) ShowReverseInflection(_currentArInflection);
         }
         if (e.Key == Windows.System.VirtualKey.Down && ResultsList.Items.Count > 0)
         {
@@ -65,6 +68,7 @@ public partial class SearchPage : Page
             _current = Array.Empty<Entry>();
             _currentRev = Array.Empty<ArabicResult>();
             _currentInflection = null;
+            _currentArInflection = null;
             ResultsList.ItemsSource = null;
             ResetPane();
             return;
@@ -73,6 +77,7 @@ public partial class SearchPage : Page
         {
             _current = Array.Empty<Entry>();
             _currentInflection = null;
+            _currentArInflection = null;
             _currentRev = DictionaryService.SearchArabic(q);
             ResultsList.FlowDirection = FlowDirection.RightToLeft;
             ResultsList.ItemsSource = _currentRev;
@@ -83,6 +88,12 @@ public partial class SearchPage : Page
                 ResultsList.SelectedItem = pick;
                 ShowReverse(pick);
             }
+            else if (DictionaryService.InflectionOfArabic(q) is { } arinf)
+            {
+                // Conjugated/plural Arabic form not in either index -> show its lemma (يكتب -> كتب).
+                _currentArInflection = arinf;
+                ShowReverseInflection(arinf);
+            }
         }
         else
         {
@@ -91,18 +102,25 @@ public partial class SearchPage : Page
             ResultsList.FlowDirection = FlowDirection.LeftToRight;
             ResultsList.ItemsSource = _current;
             var exact = _current.FirstOrDefault(x => x.Word.Equals(q, StringComparison.OrdinalIgnoreCase));
-            if (_current.Count == 1 || exact != null)
+            _currentArInflection = null;
+            if (exact is { Found: true })
+            {
+                ResultsList.SelectedItem = exact;
+                ShowEntry(exact);
+                _currentInflection = null;
+            }
+            else if (DictionaryService.InflectionOf(q) is { } inf && DictionaryService.Exact(inf.Lemma) is { Found: true })
+            {
+                // Unknown word or empty 1996 miss-record, but a known inflection (ABANDONS -> ABANDON).
+                _currentInflection = inf;
+                ShowInflection(inf);
+            }
+            else if (_current.Count == 1 || exact != null)
             {
                 var pick = exact ?? _current[0];
                 ResultsList.SelectedItem = pick;
                 ShowEntry(pick);
                 _currentInflection = null;
-            }
-            else if (_current.Count == 0 && DictionaryService.InflectionOf(q) is { } inf)
-            {
-                // Typed form not in the 1996 index, but a known inflection (ABANDONS -> ABANDON).
-                _currentInflection = inf;
-                ShowInflection(inf);
             }
             else
             {
@@ -171,6 +189,22 @@ public partial class SearchPage : Page
     {
         WordTitle.FlowDirection = FlowDirection.RightToLeft;
         WordTitle.Text = rev.ArabicTerm;
+        RenderArabicSections(rev);
+    }
+
+    /// <summary>Typed Arabic form resolved to its lemma (Wiktionary): the lemma's translations
+    /// under the typed form, with a "form of" note in the subtitle (يكتب -> كتب).</summary>
+    void ShowReverseInflection(ArabicInflection inf)
+    {
+        WordTitle.FlowDirection = FlowDirection.RightToLeft;
+        WordTitle.Text = inf.FormDisplay;
+        RenderArabicSections(inf.Lemma);
+        string note = inf.Note.Length > 0 ? char.ToUpperInvariant(inf.Note[0]) + inf.Note[1..] : "Form";
+        WordSubtitle.Text = note + " of " + inf.Lemma.ArabicTerm + (WordSubtitle.Text.Length > 0 ? " - " + WordSubtitle.Text : "");
+    }
+
+    void RenderArabicSections(ArabicResult rev)
+    {
         MeaningsRepeater.ItemsSource = null;
         MeaningsRepeater.Visibility = Visibility.Collapsed;
         NotFoundText.Visibility = Visibility.Collapsed;
