@@ -31,5 +31,6 @@
   <ItemGroup>
     <Content Include="app.ico"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
     <Content Include="..\..\data\dictionary.jsonl" Link="data\dictionary.jsonl"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
+    <Content Include="..\..\data\wiktionary-ar.jsonl" Link="data\wiktionary-ar.jsonl"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
   </ItemGroup>
 </Project>

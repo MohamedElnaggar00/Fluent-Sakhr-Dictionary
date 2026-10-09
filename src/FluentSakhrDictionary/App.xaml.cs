@@ -7,7 +7,7 @@ public partial class App : Application
     public static string AppData => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FluentSakhrDictionary");
     public static MainWindow? Main;
     /// <summary>CI-only: --screenshot=path [--shot-word=CAT] [--theme=Dark] renders the app and exits.</summary>
-    public static string? ScreenshotPath, ShotWord, ShotTheme;
+    public static string? ScreenshotPath, ShotWord, ShotTheme, ShotPage;
     static Mutex? _mutex;
     MainWindow? _window;
 
@@ -32,6 +32,8 @@ public partial class App : Application
             else if (a == "--shot-word" && i + 1 < argv.Length) ShotWord = argv[++i];
             if (a.StartsWith("--theme=")) ShotTheme = a[8..];
             else if (a == "--theme" && i + 1 < argv.Length) ShotTheme = argv[++i];
+            if (a.StartsWith("--shot-page=")) ShotPage = a[12..];
+            else if (a == "--shot-page" && i + 1 < argv.Length) ShotPage = argv[++i];
         }
         _mutex = new Mutex(true, "FluentSakhrDictionary.SingleInstance", out bool created);
         if (!created) { Environment.Exit(0); return; }

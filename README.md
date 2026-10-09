@@ -51,3 +51,10 @@ brought to you by app.instinct AI
 ## License
 
 MIT
+
+## Data sources
+
+- **English -> Arabic:** the original 1996 Sakhr dictionary data, extracted from the user's own copy (59,427 lemmas, 125,896 meanings). See `extraction/` and `tools/`.
+- **Arabic -> English:** Arabic entries from English Wiktionary, machine-extracted by wiktextract and published at [kaikki.org](https://kaikki.org/dictionary/Arabic/) (36,627 entries, 60,395 glosses). License: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) - see `data/LICENSE-wiktionary-ar.txt`. Regenerate with `python3 tools/extract_wiktionary.py <kaikki-dump.jsonl> data/wiktionary-ar.jsonl`.
+
+The application source code is MIT licensed; the Wiktionary-derived data file ships under CC BY-SA 4.0 with attribution.

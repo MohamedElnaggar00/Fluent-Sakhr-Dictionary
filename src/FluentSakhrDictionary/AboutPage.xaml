@@ -29,6 +29,8 @@
                     <TextBlock Text="Developer: Mohamed Elnaggar" FontSize="13"/>
                     <TextBlock Text="Contributors: app.instinct" FontSize="13"/>
                     <TextBlock Text="License: MIT" FontSize="13"/>
+                    <TextBlock Text="English-Arabic data: the original 1996 Sakhr dictionary" FontSize="13"/>
+                    <TextBlock Text="Arabic-English data: English Wiktionary via kaikki.org (wiktextract), CC BY-SA 4.0" FontSize="13" TextWrapping="Wrap"/>
                     <HyperlinkButton Content="github.com/MohamedElnaggar00/Fluent-Sakhr-Dictionary"
                                      NavigateUri="https://github.com/MohamedElnaggar00/Fluent-Sakhr-Dictionary"
                                      FontSize="13" Padding="0"/>

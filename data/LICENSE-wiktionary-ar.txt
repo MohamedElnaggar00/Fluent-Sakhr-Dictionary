@@ -1,0 +1,13 @@
+The file data/wiktionary-ar.jsonl is derived from English Wiktionary's Arabic
+entries, machine-extracted by the wiktextract project and published at
+kaikki.org (https://kaikki.org/dictionary/Arabic/).
+
+Source data license: Creative Commons Attribution-ShareAlike 4.0 International
+(CC BY-SA 4.0), dual-licensed under the GNU Free Documentation License.
+https://creativecommons.org/licenses/by-sa/4.0/
+
+Attribution: "Arabic-English entries from English Wiktionary
+(en.wiktionary.org), via kaikki.org / wiktextract."
+
+This data file is shared under the same CC BY-SA 4.0 license. The application's
+source code remains under the MIT license (see LICENSE).

@@ -13,12 +13,31 @@
                 <RadioButton Content="Dark" Tag="Dark"/>
             </RadioButtons>
 
+            <TextBlock Text="Accent color" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,4"/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <StackPanel x:Name="AccentRow1" Orientation="Horizontal" Spacing="8"/>
+                <StackPanel x:Name="AccentRow2" Orientation="Horizontal" Spacing="8"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                <Button Content="Custom color..." Click="AccentCustom_Click"/>
+                <Button Content="Reset to default" Click="AccentReset_Click"/>
+            </StackPanel>
+
             <TextBlock Text="Backdrop" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,4"/>
             <RadioButtons x:Name="BackdropPicker" SelectedIndex="0" SelectionChanged="Setting_Changed">
                 <RadioButton Content="Mica" Tag="Mica"/>
                 <RadioButton Content="Mica Alt" Tag="MicaAlt"/>
                 <RadioButton Content="Desktop Acrylic" Tag="Acrylic"/>
             </RadioButtons>
+
+            <TextBlock Text="Updates" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,4"/>
+            <TextBlock Text="The app never checks for updates on its own. Press the button to check once, right now."
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
+            <Button x:Name="CheckButton" Content="Check for updates" Click="CheckUpdates_Click" Margin="0,4,0,0"/>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock x:Name="UpdateResult" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                <HyperlinkButton x:Name="UpdateLink" Content="Open download page" Visibility="Collapsed" VerticalAlignment="Center"/>
+            </StackPanel>
         </StackPanel>
     </ScrollViewer>
 </Page>

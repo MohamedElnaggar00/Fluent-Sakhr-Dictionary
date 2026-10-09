@@ -63,6 +63,8 @@ jobs:
           if (-not (Test-Path app-dark.png)) { if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; Write-Error "Dark screenshot missing"; exit 1 }
           $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-arabic.png",'--shot-word','قط' -PassThru -Wait
           if (-not (Test-Path app-arabic.png)) { if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; Write-Error "Arabic screenshot missing"; exit 1 }
+          $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-settings.png",'--shot-page','settings' -PassThru -Wait
+          if (-not (Test-Path app-settings.png)) { if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; Write-Error "Settings screenshot missing"; exit 1 }
           Write-Host "Screenshots captured"
 
       - uses: actions/upload-artifact@v4
@@ -73,3 +75,4 @@ jobs:
             app-light.png
             app-dark.png
             app-arabic.png
+            app-settings.png

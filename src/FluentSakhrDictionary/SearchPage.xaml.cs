@@ -8,7 +8,7 @@ public partial class SearchPage : Page
 {
     readonly DispatcherTimer _debounce = new() { Interval = TimeSpan.FromMilliseconds(120) };
     IReadOnlyList<Entry> _current = Array.Empty<Entry>();
-    IReadOnlyList<ReverseResult> _currentRev = Array.Empty<ReverseResult>();
+    IReadOnlyList<ArabicResult> _currentRev = Array.Empty<ArabicResult>();
 
     public SearchPage()
     {
@@ -60,7 +60,7 @@ public partial class SearchPage : Page
         if (q.Length == 0)
         {
             _current = Array.Empty<Entry>();
-            _currentRev = Array.Empty<ReverseResult>();
+            _currentRev = Array.Empty<ArabicResult>();
             ResultsList.ItemsSource = null;
             ResetPane();
             return;
@@ -68,7 +68,7 @@ public partial class SearchPage : Page
         if (HasArabic(q))
         {
             _current = Array.Empty<Entry>();
-            _currentRev = DictionaryService.ReverseSearch(q);
+            _currentRev = DictionaryService.SearchArabic(q);
             ResultsList.FlowDirection = FlowDirection.RightToLeft;
             ResultsList.ItemsSource = _currentRev;
             var exact = _currentRev.FirstOrDefault(x => DictionaryService.NormalizeArabic(x.ArabicTerm) == DictionaryService.NormalizeArabic(q));
@@ -81,7 +81,7 @@ public partial class SearchPage : Page
         }
         else
         {
-            _currentRev = Array.Empty<ReverseResult>();
+            _currentRev = Array.Empty<ArabicResult>();
             _current = DictionaryService.Search(q);
             ResultsList.FlowDirection = FlowDirection.LeftToRight;
             ResultsList.ItemsSource = _current;
@@ -99,7 +99,7 @@ public partial class SearchPage : Page
         switch (ResultsList.SelectedItem)
         {
             case Entry entry: ShowEntry(entry); break;
-            case ReverseResult rev: ShowReverse(rev); break;
+            case ArabicResult rev: ShowReverse(rev); break;
         }
     }
 
@@ -109,6 +109,9 @@ public partial class SearchPage : Page
         WordTitle.Text = entry.DisplayWord;
         EnglishRepeater.ItemsSource = null;
         EnglishRepeater.Visibility = Visibility.Collapsed;
+        SakhrHeader.Visibility = Visibility.Collapsed;
+        SakhrRepeater.ItemsSource = null;
+        SakhrRepeater.Visibility = Visibility.Collapsed;
         if (entry.Found)
         {
             WordSubtitle.Text = entry.Meanings.Length == 1 ? "1 meaning" : entry.Meanings.Length + " meanings";
@@ -125,16 +128,40 @@ public partial class SearchPage : Page
         }
     }
 
-    void ShowReverse(ReverseResult rev)
+    void ShowReverse(ArabicResult rev)
     {
         WordTitle.FlowDirection = FlowDirection.RightToLeft;
         WordTitle.Text = rev.ArabicTerm;
-        WordSubtitle.Text = rev.EnglishLemmas.Length == 1 ? "1 English word" : rev.EnglishLemmas.Length + " English words";
         MeaningsRepeater.ItemsSource = null;
         MeaningsRepeater.Visibility = Visibility.Collapsed;
         NotFoundText.Visibility = Visibility.Collapsed;
         EnglishRepeater.Visibility = Visibility.Visible;
-        EnglishRepeater.ItemsSource = rev.EnglishLemmas.Select(Entry.TitleCase).ToArray();
+        if (rev.FromWiktionary)
+        {
+            int n = rev.Glosses.Length;
+            WordSubtitle.Text = (rev.Pos.Length > 0 ? rev.Pos + " - " : "") + (n == 1 ? "1 meaning from Wiktionary" : n + " meanings from Wiktionary");
+            EnglishRepeater.ItemsSource = rev.Glosses;
+            if (rev.SakhrLemmas.Length > 0)
+            {
+                SakhrHeader.Visibility = Visibility.Visible;
+                SakhrRepeater.Visibility = Visibility.Visible;
+                SakhrRepeater.ItemsSource = rev.SakhrLemmas.Select(Entry.TitleCase).ToArray();
+            }
+            else
+            {
+                SakhrHeader.Visibility = Visibility.Collapsed;
+                SakhrRepeater.Visibility = Visibility.Collapsed;
+                SakhrRepeater.ItemsSource = null;
+            }
+        }
+        else
+        {
+            WordSubtitle.Text = rev.SakhrLemmas.Length == 1 ? "1 English word (Sakhr 1996)" : rev.SakhrLemmas.Length + " English words (Sakhr 1996)";
+            EnglishRepeater.ItemsSource = rev.SakhrLemmas.Select(Entry.TitleCase).ToArray();
+            SakhrHeader.Visibility = Visibility.Collapsed;
+            SakhrRepeater.Visibility = Visibility.Collapsed;
+            SakhrRepeater.ItemsSource = null;
+        }
     }
 
     void ResetPane()
@@ -146,6 +173,9 @@ public partial class SearchPage : Page
         MeaningsRepeater.ItemsSource = null;
         EnglishRepeater.ItemsSource = null;
         EnglishRepeater.Visibility = Visibility.Collapsed;
+        SakhrHeader.Visibility = Visibility.Collapsed;
+        SakhrRepeater.ItemsSource = null;
+        SakhrRepeater.Visibility = Visibility.Collapsed;
         NotFoundText.Visibility = Visibility.Collapsed;
     }
 }

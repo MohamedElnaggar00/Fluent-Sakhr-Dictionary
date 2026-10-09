@@ -7,6 +7,7 @@ public class Settings
 {
     public string Theme { get; set; } = "Default";   // Default | Light | Dark
     public string Backdrop { get; set; } = "Mica";   // Mica | MicaAlt | Acrylic
+    public string Accent { get; set; } = "";        // "" = default teal #00A6A6
 
     static string FilePath => Path.Combine(App.AppData, "settings.json");
 

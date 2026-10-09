@@ -20,10 +20,12 @@ public record Entry(string Word, string[] Meanings)
     }
 }
 
-/// <summary>One Arabic term and every English lemma whose 1996 Sakhr meanings contain it.</summary>
-public record ReverseResult(string ArabicTerm, string[] EnglishLemmas)
+/// <summary>One Arabic term: real Wiktionary glosses when they exist, plus the 1996 Sakhr
+/// reverse-index English lemmas as a clearly-separated supplement. Never interleaved.</summary>
+public record ArabicResult(string ArabicTerm, string[] Glosses, string Pos, string[] SakhrLemmas)
 {
     public string DisplayWord => ArabicTerm;
+    public bool FromWiktionary => Glosses.Length > 0;
 }
 
 /// <summary>Loads the embedded Sakhr dataset once and answers instant prefix/exact lookups over a sorted array, both directions.</summary>
@@ -33,6 +35,8 @@ public static class DictionaryService
     static string[] _words = Array.Empty<string>();
     static string[] _revKeys = Array.Empty<string>();
     static RevBucket[] _revBuckets = Array.Empty<RevBucket>();
+    static string[] _wikKeys = Array.Empty<string>();
+    static WikBucket[] _wikBuckets = Array.Empty<WikBucket>();
     static readonly object _gate = new();
     static bool _loaded;
 
@@ -40,6 +44,13 @@ public static class DictionaryService
     {
         public string Display = "";
         public readonly List<string> Lemmas = new();
+    }
+
+    sealed class WikBucket
+    {
+        public string Display = "";
+        public string Pos = "";
+        public readonly List<string> Glosses = new();
     }
 
     public static int Count => _entries.Length;
@@ -95,6 +106,41 @@ public static class DictionaryService
             _revKeys = rev.Keys.ToArray();
             Array.Sort(_revKeys, StringComparer.Ordinal);
             _revBuckets = _revKeys.Select(k => rev[k]).ToArray();
+
+            // Wiktionary Arabic-English data (CC BY-SA 4.0). Optional file: the app still
+            // works from the 1996 reverse index alone when it is absent.
+            var wik = new Dictionary<string, WikBucket>(StringComparer.Ordinal);
+            string wikPath = Path.Combine(AppContext.BaseDirectory, "data", "wiktionary-ar.jsonl");
+            if (File.Exists(wikPath))
+            {
+                foreach (var line in File.ReadLines(wikPath))
+                {
+                    if (line.Length == 0) continue;
+                    using var doc = JsonDocument.Parse(line);
+                    var root = doc.RootElement;
+                    string word = root.GetProperty("word").GetString() ?? "";
+                    string pos = root.TryGetProperty("pos", out var p) ? p.GetString() ?? "" : "";
+                    string key = NormalizeArabic(word);
+                    if (key.Length == 0) continue;
+                    if (!wik.TryGetValue(key, out var bucket))
+                    {
+                        bucket = new WikBucket { Display = word, Pos = pos };
+                        wik[key] = bucket;
+                    }
+                    else if (pos.Length > 0 && !bucket.Pos.Split(" \u00b7 ").Contains(pos))
+                    {
+                        bucket.Pos = bucket.Pos.Length == 0 ? pos : bucket.Pos + " \u00b7 " + pos;
+                    }
+                    foreach (var g in root.GetProperty("glosses").EnumerateArray())
+                    {
+                        string? gloss = g.GetString();
+                        if (!string.IsNullOrWhiteSpace(gloss) && !bucket.Glosses.Contains(gloss)) bucket.Glosses.Add(gloss);
+                    }
+                }
+            }
+            _wikKeys = wik.Keys.ToArray();
+            Array.Sort(_wikKeys, StringComparer.Ordinal);
+            _wikBuckets = _wikKeys.Select(k => wik[k]).ToArray();
             _loaded = true;
         }
     }
@@ -153,28 +199,56 @@ public static class DictionaryService
         return fallback;
     }
 
-    /// <summary>Arabic -&gt; English: prefix window over the normalized reverse index built from the 1996 meanings.</summary>
-    public static IReadOnlyList<ReverseResult> ReverseSearch(string query, int max = 200)
+    /// <summary>Arabic -&gt; English: merges prefix windows over the Wiktionary index and the
+    /// 1996 Sakhr reverse index. Wiktionary glosses win the entry; Sakhr lemmas ride along as
+    /// a labeled supplement, so the two sources never interleave or duplicate.</summary>
+    public static IReadOnlyList<ArabicResult> SearchArabic(string query, int max = 200)
     {
         EnsureLoaded();
         string q = NormalizeArabic(query);
-        if (q.Length == 0) return Array.Empty<ReverseResult>();
-        int lo = 0, hi = _revKeys.Length - 1, first = -1;
+        if (q.Length == 0) return Array.Empty<ArabicResult>();
+        var keys = new SortedSet<string>(StringComparer.Ordinal);
+        CollectPrefix(_wikKeys, q, keys, max);
+        CollectPrefix(_revKeys, q, keys, max);
+        var list = new List<ArabicResult>();
+        foreach (string key in keys)
+        {
+            if (list.Count >= max) break;
+            string display = "", pos = "";
+            string[] glosses = Array.Empty<string>(), lemmas = Array.Empty<string>();
+            int wi = Array.BinarySearch(_wikKeys, key, StringComparer.Ordinal);
+            if (wi >= 0)
+            {
+                var b = _wikBuckets[wi];
+                display = b.Display;
+                pos = b.Pos;
+                glosses = b.Glosses.ToArray();
+            }
+            int ri = Array.BinarySearch(_revKeys, key, StringComparer.Ordinal);
+            if (ri >= 0)
+            {
+                lemmas = _revBuckets[ri].Lemmas.ToArray();
+                if (display.Length == 0) display = _revBuckets[ri].Display;
+            }
+            list.Add(new ArabicResult(display, glosses, pos, lemmas));
+        }
+        return list;
+    }
+
+    static void CollectPrefix(string[] keys, string q, SortedSet<string> into, int max)
+    {
+        int lo = 0, hi = keys.Length - 1, first = -1;
         while (lo <= hi)
         {
             int mid = (lo + hi) / 2;
-            int cmp = string.CompareOrdinal(_revKeys[mid], q);
-            bool starts = cmp >= 0 && _revKeys[mid].StartsWith(q, StringComparison.Ordinal);
+            int cmp = string.CompareOrdinal(keys[mid], q);
+            bool starts = cmp >= 0 && keys[mid].StartsWith(q, StringComparison.Ordinal);
             if (starts) { first = mid; hi = mid - 1; }
             else if (cmp < 0) lo = mid + 1; else hi = mid - 1;
         }
-        var list = new List<ReverseResult>();
-        if (first >= 0)
-        {
-            for (int i = first; i < _revKeys.Length && _revKeys[i].StartsWith(q, StringComparison.Ordinal) && list.Count < max; i++)
-                list.Add(new ReverseResult(_revBuckets[i].Display, _revBuckets[i].Lemmas.ToArray()));
-        }
-        return list;
+        if (first < 0) return;
+        for (int i = first; i < keys.Length && keys[i].StartsWith(q, StringComparison.Ordinal) && into.Count < max; i++)
+            into.Add(keys[i]);
     }
 
     public static Entry? Exact(string word)
