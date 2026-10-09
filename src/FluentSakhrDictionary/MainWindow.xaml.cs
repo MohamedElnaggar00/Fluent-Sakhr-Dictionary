@@ -31,6 +31,34 @@ public partial class MainWindow : Window
         ContentFrame.Navigate(typeof(SearchPage));
         Activated += (_, _) => { if (ContentFrame.Content is SearchPage sp) sp.FocusSearchBox(); };
         if (App.ScreenshotPath != null) RunScreenshot();
+        else if (!_settings.Welcomed) DispatcherQueue.TryEnqueue(async () => await ShowWelcome());
+    }
+
+    /// <summary>First launch only: introduce the optional Wiktionary database and let the
+    /// user enable it right here. Dismissing keeps it off; Settings can change it anytime.</summary>
+    async Task ShowWelcome()
+    {
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Title = "Welcome to Sakhr Dictionary Revive",
+            Content = new TextBlock
+            {
+                TextWrapping = TextWrapping.Wrap,
+                Text = "This app can also use the Wiktionary database to improve word understanding and matching: it powers inflection lookup (ABANDONS -> Abandon, يكتبون -> كتب) and adds extra Arabic meanings. Turn it on now, or leave it off to use the original 1996 Sakhr database only. You can change this anytime in Settings.",
+            },
+            PrimaryButtonText = "Turn on Wiktionary",
+            CloseButtonText = "Keep it off",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        try
+        {
+            var result = await dialog.ShowAsync();
+            _settings.UseWiktionary = result == ContentDialogResult.Primary;
+        }
+        catch { }
+        _settings.Welcomed = true;
+        _settings.Save();
     }
 
     async void RunScreenshot()
