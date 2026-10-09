@@ -8,7 +8,7 @@ param(
   [int]$Start = 0,
   [int]$Count = 20,
   [string]$OutName = "dump.jsonl",
-  [int]$SettleMs = 3000
+  [int]$SettleMs = 1200
 )
 $ErrorActionPreference = 'Continue'
 $OutDir = "$env:RUNNER_TEMP\dump-results"
@@ -360,10 +360,14 @@ foreach ($w in $words) {
     Start-Sleep -Seconds 2
     $r = Invoke-Lookup $word
     if ($r.match -ine $word) {
-      Log "miss after relaunch: '$word' - not found"
+      Log "miss after relaunch: '$word' - genuine not-found; instance is wedged, relaunching now"
       $rec = [ordered]@{ word = $word; match = ''; meanings = @() }
       $sw.WriteLine(($rec | ConvertTo-Json -Compress))
       $done++
+      $ui = Launch-App
+      if (-not $ui) { Log "FATAL: relaunch failed"; break }
+      Open-ProcHandle
+      Start-Sleep -Seconds 2
       continue
     }
   }
