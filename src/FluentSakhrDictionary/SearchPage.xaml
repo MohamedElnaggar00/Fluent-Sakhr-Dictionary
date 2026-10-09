@@ -54,11 +54,12 @@
                         <ItemsRepeater x:Name="MeaningsRepeater">
                             <ItemsRepeater.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid FlowDirection="RightToLeft" Margin="0,8">
+                                    <Grid FlowDirection="LeftToRight" Margin="0,8">
                                         <TextBlock Text="{Binding}"
                                                    FontSize="22"
                                                    Foreground="{StaticResource MeaningBrush}"
                                                    TextWrapping="Wrap"
+                                                   HorizontalAlignment="Right"
                                                    TextAlignment="Right"/>
                                     </Grid>
                                 </DataTemplate>
@@ -71,11 +72,13 @@
                         <ItemsRepeater x:Name="SakhrRepeater" Visibility="Collapsed">
                             <ItemsRepeater.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="0,6">
+                                    <Grid FlowDirection="LeftToRight" Margin="0,6">
                                         <TextBlock Text="{Binding}"
                                                    FontSize="20"
                                                    Foreground="{StaticResource MeaningBrush}"
-                                                   TextWrapping="Wrap"/>
+                                                   TextWrapping="Wrap"
+                                                   HorizontalAlignment="Left"
+                                                   TextAlignment="Left"/>
                                     </Grid>
                                 </DataTemplate>
                             </ItemsRepeater.ItemTemplate>
@@ -87,11 +90,13 @@
                         <ItemsRepeater x:Name="EnglishRepeater" Visibility="Collapsed">
                             <ItemsRepeater.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="0,8">
+                                    <Grid FlowDirection="LeftToRight" Margin="0,8">
                                         <TextBlock Text="{Binding}"
                                                    FontSize="22"
                                                    Foreground="{StaticResource MeaningBrush}"
-                                                   TextWrapping="Wrap"/>
+                                                   TextWrapping="Wrap"
+                                                   HorizontalAlignment="Left"
+                                                   TextAlignment="Left"/>
                                     </Grid>
                                 </DataTemplate>
                             </ItemsRepeater.ItemTemplate>

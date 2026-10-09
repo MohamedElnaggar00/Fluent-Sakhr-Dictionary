@@ -69,6 +69,8 @@ jobs:
           '{"UseWiktionary":true,"Language":"ar"}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-arabic-ui.png" -PassThru -Wait
           if (-not (Test-Path app-arabic-ui.png)) { Write-Error "Arabic UI screenshot missing"; exit 1 }
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-arabic-ui-cat.png",'--shot-word','CAT' -PassThru -Wait
+          if (-not (Test-Path app-arabic-ui-cat.png)) { Write-Error "Arabic UI CAT screenshot missing"; exit 1 }
           # Repro: his v0.4.0 Settings hang - his exact settings file (Dark, custom accent, Wiktionary off,
           # no Language key like a v0.3.0 file), navigated through the real nav-view DrillIn transition.
           '{"Theme":"Default","Backdrop":"Acrylic","Accent":"#8764B8","UseWiktionary":false,"Language":"system"}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
@@ -135,6 +137,7 @@ jobs:
             app-enriched.png
             app-sakhr-only-wik.png
             app-arabic-ui.png
+            app-arabic-ui-cat.png
             app-settings-his.png
             app-settings-ar.png
             app-about.png
