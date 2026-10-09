@@ -108,7 +108,7 @@ Developer: Mohamed Elnaggar
 
 Contributors: app.instinct
 
-[brought to you by app.instinct AI](https://instinct.com)
+[brought to you by Instinct](https://instinct.com)
 
 ## License
 

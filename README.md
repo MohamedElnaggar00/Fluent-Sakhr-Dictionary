@@ -103,7 +103,7 @@ framework-dependent، ومثبّت Windows App Runtime مضمّن في ملف ا
 
 المساهمون: app.instinct
 
-[brought to you by app.instinct AI](https://instinct.com)
+[brought to you by Instinct](https://instinct.com)
 
 ## الرخصة
 
