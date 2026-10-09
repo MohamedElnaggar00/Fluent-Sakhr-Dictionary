@@ -16,7 +16,7 @@ namespace FluentSakhrDictionarySetup;
 static class Program
 {
     const string Product = "Sakhr Dictionary Revive";
-    const string Version = "0.2.0";
+    const string Version = "0.3.0";
     static string Target => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "SakhrDictionaryRevive");
     static readonly HttpClient Http = new() { Timeout = TimeSpan.FromMinutes(15) };
     [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int a, ref int v, int s);
