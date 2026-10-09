@@ -62,7 +62,9 @@ public partial class SettingsPage : Page
     {
         if (!_ready || _applyingLanguage) return;
         _applyingLanguage = true;
-        _settings.Language = (LanguagePicker.SelectedItem as RadioButton)?.Tag as string ?? "system";
+        var lang = (LanguagePicker.SelectedItem as RadioButton)?.Tag as string ?? "system";
+        if (lang == _settings.Language) { _applyingLanguage = false; return; } // spurious load-time event
+        _settings.Language = lang;
         _settings.Save();
         Loc.Apply(_settings);
         if (App.Main is MainWindow w)
@@ -76,6 +78,7 @@ public partial class SettingsPage : Page
     void Wiktionary_Toggled(object sender, RoutedEventArgs e)
     {
         if (!_ready) return;
+        if (WiktionaryToggle.IsOn == _settings.UseWiktionary) return; // spurious load-time event
         _settings.UseWiktionary = WiktionaryToggle.IsOn;
         _settings.Save();
     }
@@ -83,8 +86,11 @@ public partial class SettingsPage : Page
     void Setting_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (!_ready) return;
-        _settings.Theme = (ThemePicker.SelectedItem as RadioButton)?.Tag as string ?? "Default";
-        _settings.Backdrop = (BackdropPicker.SelectedItem as RadioButton)?.Tag as string ?? "Mica";
+        var theme = (ThemePicker.SelectedItem as RadioButton)?.Tag as string ?? "Default";
+        var backdrop = (BackdropPicker.SelectedItem as RadioButton)?.Tag as string ?? "Mica";
+        if (theme == _settings.Theme && backdrop == _settings.Backdrop) return; // spurious load-time event
+        _settings.Theme = theme;
+        _settings.Backdrop = backdrop;
         _settings.Save();
         if (App.Main is MainWindow w)
         {

@@ -87,9 +87,9 @@ public partial class MainWindow : Window
             "about" => typeof(AboutPage),
             _ => typeof(SearchPage),
         };
-        // DrillIn entrance transition (his choice: keep the animation). The re-entrancy guard in
-        // SettingsPage.Language_Changed prevents a re-navigation from landing mid-transition.
-        ContentFrame.Navigate(page, null, new Microsoft.UI.Xaml.Media.Animation.DrillInNavigationTransitionInfo());
+        // Standard entrance animation: lighter than DrillIn (which froze mid-animation on his
+        // 125% custom-scale machine) while keeping navigation animated (his standing choice).
+        ContentFrame.Navigate(page, null, new Microsoft.UI.Xaml.Media.Animation.EntranceNavigationTransitionInfo());
     }
 
     // ---------- accent color (same pattern as Fluent Prayer Times / Fluent Vantage Toolbar) ----------
