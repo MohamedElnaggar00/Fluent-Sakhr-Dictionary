@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [vU1-addPageRes, vU2-addLeftCol, vU3-addListView]
+        variant: [vN1-u3plusComments, vN2-realNoComments]
     steps:
       - uses: actions/checkout@v4
 
