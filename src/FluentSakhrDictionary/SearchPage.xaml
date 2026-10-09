@@ -59,7 +59,7 @@
                                                    FontSize="22"
                                                    Foreground="{StaticResource MeaningBrush}"
                                                    TextWrapping="Wrap"
-                                                   HorizontalAlignment="Right"/>
+                                                   TextAlignment="Right"/>
                                     </Grid>
                                 </DataTemplate>
                             </ItemsRepeater.ItemTemplate>
