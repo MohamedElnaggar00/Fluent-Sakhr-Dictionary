@@ -4,10 +4,12 @@
 # cause: the exe finds its own dir via ANSI GetModuleFileNameA; under the runner's
 # en-US codepage the Arabic folder name mangles to '?' so LoadLibrary of its own
 # DLLs fails. v4: run a copy from an all-ASCII path (C:\sakhrapp\sakhr.exe).
-# v4 findings: ASCII path WORKS - app launches clean, DictWClass1 window shown, UI
-# renders (owner-drawn Arabic renders fine; no child controls - custom controls).
-# Posted WM_CHAR had no effect. v5: real input via SendInput (click input box, type,
-# Enter, click Meaning), direct clipboard read (Windows PowerShell is STA).
+# v4 findings: ASCII path WORKS - app launches clean, no fatal dialog.
+# v5 findings: the REAL UI is a separate top-level window: class #32770, title
+# "The Dictionary ... 2006/2007" (DictWClass1 is a hidden helper). A hidden
+# ComboLBox exists -> real standard controls. v6: target the #32770 window,
+# enumerate child controls with IDs/rects, WM_SETTEXT the edit, BM_CLICK Meaning,
+# WM_GETTEXT the meaning pane.
 $ErrorActionPreference = 'Continue'
 $OutDir = "$env:RUNNER_TEMP\probe-results"
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
@@ -37,9 +39,12 @@ public class WinP {
   public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr w, string l, uint flags, uint timeout, out IntPtr result);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)]
   public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr w, IntPtr l, uint flags, uint timeout, out IntPtr result);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)]
+  public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr w, StringBuilder l, uint flags, uint timeout, out IntPtr result);
   [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
   [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll")] public static extern int GetDlgCtrlID(IntPtr h);
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
   [DllImport("user32.dll")] public static extern void mouse_event(uint flags, uint dx, uint dy, uint data, IntPtr extra);
   [DllImport("user32.dll")] public static extern uint SendInput(uint n, INPUT[] inputs, int size);
@@ -102,10 +107,18 @@ public class WinP {
   public static List<string> Kids(IntPtr p) {
     var r = new List<string>();
     EnumChildWindows(p, (h, l) => {
-      r.Add(string.Format("  0x{0:X} class=[{1}] text=[{2}]", h.ToInt64(), Cls(h), Txt(h)));
+      RECT rc; GetWindowRect(h, out rc);
+      r.Add(string.Format("  0x{0:X} id={1} class=[{2}] text=[{3}] rect=({4},{5})-({6},{7})",
+        h.ToInt64(), GetDlgCtrlID(h), Cls(h), Txt(h), rc.Left, rc.Top, rc.Right, rc.Bottom));
       return true;
     }, IntPtr.Zero);
     return r;
+  }
+  public static string GetTextMsg(IntPtr h, int max) {
+    var sb = new StringBuilder(max);
+    IntPtr res;
+    SendMessageTimeout(h, WM_GETTEXT, (IntPtr)max, sb, SMTO_ABORTIFHUNG, 3000, out res);
+    return sb.ToString();
   }
   public static List<IntPtr> KidHwnds(IntPtr p) {
     var r = new List<IntPtr>();
@@ -212,10 +225,10 @@ foreach ($h in [WinP]::TopHwnds()) {
 Start-Sleep -Seconds 2
 Shot "probe-02-after-dialog-dismiss.png"
 
-# --- 5. locate the app window by class -------------------------------------
+# --- 5. locate the REAL UI window: #32770 "The Dictionary" ------------------
 $appHwnd = [IntPtr]::Zero
 foreach ($h in [WinP]::TopHwnds()) {
-  if ([WinP]::Cls($h) -eq 'DictWClass1') { $appHwnd = $h; break }
+  if ([WinP]::Cls($h) -eq '#32770' -and [WinP]::Txt($h) -match 'The Dictionary') { $appHwnd = $h; break }
 }
 if ($appHwnd -eq [IntPtr]::Zero) {
   Log "FATAL: no DictWClass1 window found"
@@ -230,42 +243,51 @@ if ($appHwnd -eq [IntPtr]::Zero) {
   Start-Sleep -Seconds 2
   Shot "probe-03-window-shown.png"
 
-  # --- 6. drive lookup "cat" with real input -----------------------------
-  # deterministic geometry: park the window at (100,100)
-  [WinP]::SetWindowPos($appHwnd, [IntPtr]::Zero, 100, 100, 0, 0, 0x0001) | Out-Null  # SWP_NOSIZE
+  # --- 6. drive lookup "cat" via real child controls -----------------------
+  $editHwnd = [IntPtr]::Zero
+  $comboHwnd = [IntPtr]::Zero
+  $meaningBtn = [IntPtr]::Zero
+  $paneHwnds = @()
+  foreach ($k in [WinP]::KidHwnds($appHwnd)) {
+    $kc = [WinP]::Cls($k); $kt = [WinP]::Txt($k)
+    Log "child: 0x$($k.ToInt64().ToString('X')) class=[$kc] text=[$kt]"
+    if ($kc -match 'edit' -and $editHwnd -eq [IntPtr]::Zero) { $editHwnd = $k }
+    if ($kc -match 'combo' -and $comboHwnd -eq [IntPtr]::Zero) { $comboHwnd = $k }
+    if ($kc -match 'button' -and $kt -match 'Meaning') { $meaningBtn = $k }
+    if ($kc -match 'edit|static|rich' -and $k -ne $editHwnd) { $paneHwnds += $k }
+  }
+  Log "edit=0x$($editHwnd.ToInt64().ToString('X')) combo=0x$($comboHwnd.ToInt64().ToString('X')) meaningBtn=0x$($meaningBtn.ToInt64().ToString('X')) panes=$($paneHwnds.Count)"
+
+  $target = if ($editHwnd -ne [IntPtr]::Zero) { $editHwnd } elseif ($comboHwnd -ne [IntPtr]::Zero) { $comboHwnd } else { [IntPtr]::Zero }
+  if ($target -ne [IntPtr]::Zero) {
+    $ok = [WinP]::SetText($target, 'cat')
+    Log "WM_SETTEXT cat: sent=$ok"
+  } else { Log "no edit/combo control found!" }
   Start-Sleep -Milliseconds 500
-  $r = New-Object WinP+RECT
-  [WinP]::GetWindowRect($appHwnd, [ref]$r) | Out-Null
-  Log "window rect: ($($r.Left),$($r.Top))-($($r.Right),$($r.Bottom)) size=$($r.Right-$r.Left)x$($r.Bottom-$r.Top)"
-  # input box center measured at ~ (+144,+71) from window origin in v4 screenshots
-  $inX = $r.Left + 144; $inY = $r.Top + 71
-  Log "clicking input box at ($inX,$inY)"
-  [WinP]::ClickAt($inX, $inY)
-  Start-Sleep -Milliseconds 600
-  [WinP]::TypeText('cat')
-  Log "typed cat via SendInput"
-  Start-Sleep -Milliseconds 400
-  [WinP]::PressEnter()
-  Log "pressed Enter"
+  if ($meaningBtn -ne [IntPtr]::Zero) {
+    $ok = [WinP]::Click($meaningBtn)
+    Log "BM_CLICK Meaning: sent=$ok"
+  } else {
+    [WinP]::Key($appHwnd, [WinP]::VK_RETURN) | Out-Null
+    Log "posted Enter to dialog"
+  }
   Start-Sleep -Seconds 2
   Shot "probe-04-after-cat.png"
 
-  # alternative trigger: click the "Meaning" button (~ +342,+71 from origin)
-  [WinP]::ClickAt($r.Left + 342, $r.Top + 71)
-  Log "clicked Meaning button"
-  Start-Sleep -Seconds 2
-  Shot "probe-05-after-meaning-click.png"
-
-  # --- 7. clipboard probe: Ctrl+A Ctrl+C then direct STA read ------------
-  try {
-    [System.Windows.Forms.SendKeys]::SendWait("^a")
-    Start-Sleep -Milliseconds 300
-    [System.Windows.Forms.SendKeys]::SendWait("^c")
-    Start-Sleep -Milliseconds 800
-    $clip = [System.Windows.Forms.Clipboard]::GetText()
-    Log "clipboard length: $($clip.Length)"
-    $clip | Out-File "$OutDir\clipboard.txt" -Encoding utf8
-  } catch { Log "clipboard read failed: $_" }
+  # --- 7. read the meaning pane via WM_GETTEXT ------------------------------
+  foreach ($ph in $paneHwnds) {
+    $t = [WinP]::GetTextMsg($ph, 8192)
+    Log "pane 0x$($ph.ToInt64().ToString('X')) WM_GETTEXT length: $($t.Length)"
+    if ($t.Length -gt 0) {
+      $t | Out-File "$OutDir\meaning-0x$($ph.ToInt64().ToString('X')).txt" -Encoding utf8
+    }
+  }
+  # dump every child's current text too (post-lookup state)
+  foreach ($k in [WinP]::KidHwnds($appHwnd)) {
+    $t = [WinP]::GetTextMsg($k, 8192)
+    if ($t.Length -gt 0) { Log "child 0x$($k.ToInt64().ToString('X')) [$([WinP]::Cls($k))] gettext: $($t.Length) chars" }
+  }
+  Shot "probe-05-final.png"
 }
 
 # --- 8. OCR availability (no install this time) ----------------------------
