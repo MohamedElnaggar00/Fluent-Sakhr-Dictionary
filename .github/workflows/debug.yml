@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [v1-nopages, v2-strippedcsproj, v3-pagesonly]
+        variant: [only-SearchPage, only-SettingsPage, only-AboutPage]
     steps:
       - uses: actions/checkout@v4
 
