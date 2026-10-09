@@ -53,7 +53,12 @@ public partial class MainWindow : Window
     public void ApplyLanguage()
     {
         Root.FlowDirection = Loc.IsArabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
-        try { WindowChrome.SetRtlMirror(WinRT.Interop.WindowNative.GetWindowHandle(this), Loc.IsArabic); } catch { }
+        // Skip the frame mirror in screenshot runs: the mirrored DC corrupts captures
+        // (mirror-reversed glyphs). Real runs mirror normally; CI judges content only.
+        if (App.ScreenshotPath == null)
+        {
+            try { WindowChrome.SetRtlMirror(WinRT.Interop.WindowNative.GetWindowHandle(this), Loc.IsArabic); } catch { }
+        }
         NavSearch.Content = Loc.T("Search", "بحث");
         NavSettings.Content = Loc.T("Settings", "الإعدادات");
         NavAbout.Content = Loc.T("About", "حول");
@@ -81,9 +86,6 @@ public partial class MainWindow : Window
             await Task.Delay(1500);
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             Log("hwnd=" + hwnd);
-            // WS_EX_LAYOUTRTL mirrors the capture DC itself (mirrored-glyph screenshots); drop it for
-            // the capture only - the real on-screen mirror is unaffected and this process exits right after.
-            try { WindowChrome.SetRtlMirror(hwnd, false); await Task.Delay(250); } catch { }
             CaptureHelper.Save(hwnd, App.ScreenshotPath!);
             Log("saved");
         }
