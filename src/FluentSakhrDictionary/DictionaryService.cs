@@ -38,6 +38,8 @@ public static class DictionaryService
     static string[] _wikKeys = Array.Empty<string>();
     static WikBucket[] _wikBuckets = Array.Empty<WikBucket>();
     static string[] _infForms = Array.Empty<string>();
+    static string[] _trForms = Array.Empty<string>();
+    static string[][] _trBuckets = Array.Empty<string[]>();
     static InfBucket[] _infBuckets = Array.Empty<InfBucket>();
     static readonly Dictionary<string, (string Lemma, string Note)> _infAr = new(StringComparer.Ordinal);
     static readonly object _gate = new();
@@ -172,6 +174,26 @@ public static class DictionaryService
             _infForms = inf.Keys.ToArray();
             Array.Sort(_infForms, StringComparer.Ordinal);
             _infBuckets = _infForms.Select(k => inf[k]).ToArray();
+
+            // Arabic translations filling the 1996 index's empty records (Wiktionary
+            // translation tables + exact gloss matches, CC BY-SA 4.0). Optional file.
+            var tr = new Dictionary<string, string[]>(StringComparer.Ordinal);
+            string trPath = Path.Combine(AppContext.BaseDirectory, "data", "translations-en-ar.jsonl");
+            if (File.Exists(trPath))
+            {
+                foreach (var line in File.ReadLines(trPath))
+                {
+                    if (line.Length == 0) continue;
+                    using var doc = JsonDocument.Parse(line);
+                    var root = doc.RootElement;
+                    string w = root.GetProperty("word").GetString() ?? "";
+                    var ms = root.GetProperty("meanings").EnumerateArray().Select(m => m.GetString() ?? "").Where(m => m.Length > 0).ToArray();
+                    if (w.Length > 0 && ms.Length > 0) tr[w] = ms;
+                }
+            }
+            _trForms = tr.Keys.ToArray();
+            Array.Sort(_trForms, StringComparer.Ordinal);
+            _trBuckets = _trForms.Select(k => tr[k]).ToArray();
 
             // Arabic inflections (same Wiktionary source): normalized form -> (lemma, note).
             string infArPath = Path.Combine(AppContext.BaseDirectory, "data", "inflections-ar.jsonl");
@@ -329,6 +351,17 @@ public static class DictionaryService
 
     /// <summary>English inflection -> base lemma (Wiktionary, CC BY-SA 4.0). Null when the
     /// query is not a known form of a word we carry. Lemma is the raw uppercase word.</summary>
+    /// <summary>Arabic translations for a 1996 empty record, or null. Callers gate on
+    /// the Wiktionary toggle: Sakhr-only mode never sees these.</summary>
+    public static string[]? TranslationsOf(string word)
+    {
+        EnsureLoaded();
+        word = word.Trim().ToUpperInvariant();
+        if (word.Length == 0) return null;
+        int i = Array.BinarySearch(_trForms, word, StringComparer.Ordinal);
+        return i < 0 ? null : _trBuckets[i];
+    }
+
     public static Inflection? InflectionOf(string query)
     {
         EnsureLoaded();

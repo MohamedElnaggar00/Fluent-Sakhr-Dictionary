@@ -180,10 +180,22 @@ public partial class SearchPage : Page
         }
         else
         {
-            WordSubtitle.Text = "";
-            MeaningsRepeater.ItemsSource = null;
-            NotFoundText.Text = "Not found.";
-            NotFoundText.Visibility = Visibility.Visible;
+            // 1996 empty record: with Wiktionary on, show its filled translations.
+            var tr = _useWiktionary ? DictionaryService.TranslationsOf(entry.Word) : null;
+            if (tr is { Length: > 0 })
+            {
+                WordSubtitle.Text = tr.Length == 1 ? "1 meaning from Wiktionary" : tr.Length + " meanings from Wiktionary";
+                MeaningsRepeater.Visibility = Visibility.Visible;
+                MeaningsRepeater.ItemsSource = tr;
+                NotFoundText.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                WordSubtitle.Text = "";
+                MeaningsRepeater.ItemsSource = null;
+                NotFoundText.Text = "Not found.";
+                NotFoundText.Visibility = Visibility.Visible;
+            }
         }
     }
 

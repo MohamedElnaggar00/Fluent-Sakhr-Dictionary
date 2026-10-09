@@ -57,6 +57,8 @@ jobs:
       - name: Capture app screenshots (CAT light + dark, Arabic قط, inflections)
         shell: pwsh
         run: |
+          New-Item -ItemType Directory -Force "$env:APPDATA\SakhrDictionaryRevive" | Out-Null
+          '{"UseWiktionary":true,"Welcomed":true}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-home.png" -PassThru -Wait
           if (-not (Test-Path app-home.png)) { Write-Error "Home screenshot missing"; exit 1 }
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-light.png",'--shot-word','CAT' -PassThru -Wait
@@ -71,8 +73,9 @@ jobs:
           if (-not (Test-Path app-inflection.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Inflection screenshot missing"; exit 1 }
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-inflection-ar.png",'--shot-word','يكتبون' -PassThru -Wait
           if (-not (Test-Path app-inflection-ar.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Arabic inflection screenshot missing"; exit 1 }
-          New-Item -ItemType Directory -Force "$env:APPDATA\SakhrDictionaryRevive" | Out-Null
-          '{"UseWiktionary":false}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-enriched.png",'--shot-word','ACCRA' -PassThru -Wait
+          if (-not (Test-Path app-enriched.png)) { Write-Error "Enriched screenshot missing"; exit 1 }
+          '{"UseWiktionary":false,"Welcomed":true}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-sakhr-only.png",'--shot-word','ABANDONS' -PassThru -Wait
           if (-not (Test-Path app-sakhr-only.png)) { Write-Error "Sakhr-only screenshot missing"; exit 1 }
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-sakhr-only-ar.png",'--shot-word','قط' -PassThru -Wait
@@ -94,3 +97,4 @@ jobs:
             app-sakhr-only.png
             app-sakhr-only-ar.png
             app-home.png
+            app-enriched.png
