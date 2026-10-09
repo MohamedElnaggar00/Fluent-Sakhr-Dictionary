@@ -185,6 +185,18 @@ $ui = Launch-App
 if (-not $ui -or $ui.edit -eq [IntPtr]::Zero) { Log "FATAL: app UI not found"; exit 1 }
 Log "UI ready: dlg=0x$($ui.dlg.ToInt64().ToString('X')) edit=0x$($ui.edit.ToInt64().ToString('X')) btn=0x$($ui.btn.ToInt64().ToString('X')) lbWord=0x$($ui.lbWord.ToInt64().ToString('X')) lbMean=0x$($ui.lbMean.ToInt64().ToString('X'))"
 
+# wait for the dictionary engine to finish loading (dialog appears before data)
+$ready = $false
+for ($i = 0; $i -lt 120; $i++) {
+  [WinD]::SetText($ui.edit, 'CAT') | Out-Null
+  [WinD]::Click($ui.btn) | Out-Null
+  Start-Sleep -Milliseconds 500
+  $c = [WinD]::LbCount($ui.lbMean, [ref]$okR)
+  if ($okR -and $c -gt 0) { $ready = $true; Log "engine ready after ~$([math]::Round(($i+1)*0.5,1))s (CAT -> $c meanings)"; break }
+  if ($i % 10 -eq 9) { Log "waiting for engine... ($i)" }
+}
+if (-not $ready) { Log "FATAL: engine never returned meanings for CAT"; exit 1 }
+
 $words = Get-Content $WordsFile -Encoding utf8 | Select-Object -Skip $Start -First $Count
 Log "dumping $($words.Count) words from $WordsFile (skip $Start)"
 
