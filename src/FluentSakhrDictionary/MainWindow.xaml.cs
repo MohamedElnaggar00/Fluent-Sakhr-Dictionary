@@ -99,6 +99,7 @@ public partial class MainWindow : Window
         {
             Log("start theme=" + App.ShotTheme + " word=" + App.ShotWord + " path=" + App.ScreenshotPath);
             if (App.ShotTheme != null) ApplyTheme(App.ShotTheme);
+            if (App.ShotWidth > 0) { AppWindow.Resize(new Windows.Graphics.SizeInt32(App.ShotWidth, App.ShotHeight)); Log("resized " + App.ShotWidth + "x" + App.ShotHeight); }
             await Task.Delay(1200);
             if (App.ShotPage == "settings") { ContentFrame.Navigate(typeof(SettingsPage)); Log("settings page"); }
             if (App.ShotPage == "settings-nav") { Nav.SelectedItem = NavSettings; Log("settings page via nav transition"); }

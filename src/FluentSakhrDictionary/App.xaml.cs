@@ -8,6 +8,7 @@ public partial class App : Application
     public static MainWindow? Main;
     /// <summary>CI-only: --screenshot=path [--shot-word=CAT] [--theme=Dark] renders the app and exits.</summary>
     public static string? ScreenshotPath, ShotWord, ShotTheme, ShotPage;
+    public static int ShotWidth, ShotHeight;
     static Mutex? _mutex;
     MainWindow? _window;
 
@@ -34,6 +35,7 @@ public partial class App : Application
             else if (a == "--theme" && i + 1 < argv.Length) ShotTheme = argv[++i];
             if (a.StartsWith("--shot-page=")) ShotPage = a[12..];
             else if (a == "--shot-page" && i + 1 < argv.Length) ShotPage = argv[++i];
+            if (a.StartsWith("--shot-size=")) { var wh = a[12..].Split('x'); ShotWidth = int.Parse(wh[0]); ShotHeight = int.Parse(wh[1]); }
         }
         _mutex = new Mutex(true, "SakhrDictionaryRevive.SingleInstance", out bool created);
         if (!created) { Environment.Exit(0); return; }
