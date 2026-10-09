@@ -126,6 +126,7 @@ public partial class SearchPage : Page
         WordTitle.Text = entry.DisplayWord;
         EnglishRepeater.ItemsSource = null;
         EnglishRepeater.Visibility = Visibility.Collapsed;
+        WikHeader.Visibility = Visibility.Collapsed;
         SakhrHeader.Visibility = Visibility.Collapsed;
         SakhrRepeater.ItemsSource = null;
         SakhrRepeater.Visibility = Visibility.Collapsed;
@@ -155,6 +156,7 @@ public partial class SearchPage : Page
         WordTitle.Text = inf.FormDisplay;
         EnglishRepeater.ItemsSource = null;
         EnglishRepeater.Visibility = Visibility.Collapsed;
+        WikHeader.Visibility = Visibility.Collapsed;
         SakhrHeader.Visibility = Visibility.Collapsed;
         SakhrRepeater.ItemsSource = null;
         SakhrRepeater.Visibility = Visibility.Collapsed;
@@ -172,33 +174,35 @@ public partial class SearchPage : Page
         MeaningsRepeater.ItemsSource = null;
         MeaningsRepeater.Visibility = Visibility.Collapsed;
         NotFoundText.Visibility = Visibility.Collapsed;
-        EnglishRepeater.Visibility = Visibility.Visible;
-        if (rev.FromWiktionary)
+        var subtitle = new List<string>();
+        if (rev.SakhrLemmas.Length > 0)
         {
-            int n = rev.Glosses.Length;
-            WordSubtitle.Text = (rev.Pos.Length > 0 ? rev.Pos + " - " : "") + (n == 1 ? "1 meaning from Wiktionary" : n + " meanings from Wiktionary");
-            EnglishRepeater.ItemsSource = rev.Glosses;
-            if (rev.SakhrLemmas.Length > 0)
-            {
-                SakhrHeader.Visibility = Visibility.Visible;
-                SakhrRepeater.Visibility = Visibility.Visible;
-                SakhrRepeater.ItemsSource = rev.SakhrLemmas.Select(Entry.TitleCase).ToArray();
-            }
-            else
-            {
-                SakhrHeader.Visibility = Visibility.Collapsed;
-                SakhrRepeater.Visibility = Visibility.Collapsed;
-                SakhrRepeater.ItemsSource = null;
-            }
+            SakhrHeader.Visibility = Visibility.Visible;
+            SakhrRepeater.Visibility = Visibility.Visible;
+            SakhrRepeater.ItemsSource = rev.SakhrLemmas.Select(Entry.TitleCase).ToArray();
+            subtitle.Add(rev.SakhrLemmas.Length == 1 ? "1 English word (Sakhr 1996)" : rev.SakhrLemmas.Length + " English words (Sakhr 1996)");
         }
         else
         {
-            WordSubtitle.Text = rev.SakhrLemmas.Length == 1 ? "1 English word (Sakhr 1996)" : rev.SakhrLemmas.Length + " English words (Sakhr 1996)";
-            EnglishRepeater.ItemsSource = rev.SakhrLemmas.Select(Entry.TitleCase).ToArray();
             SakhrHeader.Visibility = Visibility.Collapsed;
             SakhrRepeater.Visibility = Visibility.Collapsed;
             SakhrRepeater.ItemsSource = null;
         }
+        if (rev.FromWiktionary)
+        {
+            WikHeader.Visibility = Visibility.Visible;
+            EnglishRepeater.Visibility = Visibility.Visible;
+            EnglishRepeater.ItemsSource = rev.Glosses;
+            int n = rev.Glosses.Length;
+            subtitle.Add(n == 1 ? "1 meaning from Wiktionary" : n + " meanings from Wiktionary");
+        }
+        else
+        {
+            WikHeader.Visibility = Visibility.Collapsed;
+            EnglishRepeater.Visibility = Visibility.Collapsed;
+            EnglishRepeater.ItemsSource = null;
+        }
+        WordSubtitle.Text = (rev.Pos.Length > 0 ? rev.Pos + " - " : "") + string.Join(" + ", subtitle);
     }
 
     void ResetPane()
@@ -210,6 +214,7 @@ public partial class SearchPage : Page
         MeaningsRepeater.ItemsSource = null;
         EnglishRepeater.ItemsSource = null;
         EnglishRepeater.Visibility = Visibility.Collapsed;
+        WikHeader.Visibility = Visibility.Collapsed;
         SakhrHeader.Visibility = Visibility.Collapsed;
         SakhrRepeater.ItemsSource = null;
         SakhrRepeater.Visibility = Visibility.Collapsed;

@@ -66,12 +66,13 @@
                                 <StackLayout Orientation="Vertical"/>
                             </ItemsRepeater.Layout>
                         </ItemsRepeater>
-                        <ItemsRepeater x:Name="EnglishRepeater" Visibility="Collapsed">
+                        <TextBlock x:Name="SakhrHeader" Visibility="Collapsed" Margin="0,0,0,2" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="From the 1996 Sakhr dictionary:"/>
+                        <ItemsRepeater x:Name="SakhrRepeater" Visibility="Collapsed">
                             <ItemsRepeater.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="0,8">
+                                    <Grid Margin="0,6">
                                         <TextBlock Text="{Binding}"
-                                                   FontSize="22"
+                                                   FontSize="20"
                                                    Foreground="{StaticResource MeaningBrush}"
                                                    TextWrapping="Wrap"/>
                                     </Grid>
@@ -81,13 +82,13 @@
                                 <StackLayout Orientation="Vertical"/>
                             </ItemsRepeater.Layout>
                         </ItemsRepeater>
-                        <TextBlock x:Name="SakhrHeader" Visibility="Collapsed" Margin="0,18,0,2" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="From the 1996 Sakhr dictionary:"/>
-                        <ItemsRepeater x:Name="SakhrRepeater" Visibility="Collapsed">
+                        <TextBlock x:Name="WikHeader" Visibility="Collapsed" Margin="0,18,0,2" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="From Wiktionary:"/>
+                        <ItemsRepeater x:Name="EnglishRepeater" Visibility="Collapsed">
                             <ItemsRepeater.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="0,6">
+                                    <Grid Margin="0,8">
                                         <TextBlock Text="{Binding}"
-                                                   FontSize="20"
+                                                   FontSize="22"
                                                    Foreground="{StaticResource MeaningBrush}"
                                                    TextWrapping="Wrap"/>
                                     </Grid>
