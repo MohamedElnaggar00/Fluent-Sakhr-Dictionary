@@ -23,6 +23,10 @@
                 <Button Content="Reset to default" Click="AccentReset_Click"/>
             </StackPanel>
 
+            <TextBlock Text="Dictionary" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,4"/>
+            <ToggleSwitch x:Name="WiktionaryToggle" Header="Wiktionary database" OnContent="On" OffContent="Off" Toggled="Wiktionary_Toggled"/>
+            <TextBlock TextWrapping="Wrap" FontSize="12" FlowDirection="RightToLeft" Margin="0,4,0,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="أُضيفت قاعدة بيانات Wiktionary ليتمكن القاموس من فهم تصريفات الكلمات (مثل ABANDONS ← Abandon ويكتبون ← كتب). عند إيقاف هذا الخيار يعمل التطبيق بقاعدة بيانات صخر الأصلية لعام 1996 فقط، من الإنجليزية إلى العربية ومن العربية إلى الإنجليزية."/>
             <TextBlock Text="Backdrop" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,4"/>
             <RadioButtons x:Name="BackdropPicker" SelectedIndex="0" SelectionChanged="Setting_Changed">
                 <RadioButton Content="Mica" Tag="Mica"/>
@@ -30,10 +34,6 @@
                 <RadioButton Content="Desktop Acrylic" Tag="Acrylic"/>
             </RadioButtons>
 
-            <TextBlock Text="Dictionary" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,4"/>
-            <ToggleSwitch x:Name="WiktionaryToggle" Header="Wiktionary database" OnContent="On" OffContent="Off" Toggled="Wiktionary_Toggled"/>
-            <TextBlock TextWrapping="Wrap" FontSize="12" FlowDirection="RightToLeft" Margin="0,4,0,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                Text="أُضيفت قاعدة بيانات Wiktionary ليتمكن القاموس من فهم تصريفات الكلمات (مثل ABANDONS ← Abandon ويكتبون ← كتب). عند إيقاف هذا الخيار يعمل التطبيق بقاعدة بيانات صخر الأصلية لعام 1996 فقط، من الإنجليزية إلى العربية ومن العربية إلى الإنجليزية."/>
             <TextBlock Text="Updates" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,4"/>
             <TextBlock Text="The app never checks for updates on its own. Press the button to check once, right now."
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
