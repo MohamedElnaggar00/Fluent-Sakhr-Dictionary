@@ -40,22 +40,26 @@ capabilities the original program never had.
   button in Settings checks when you ask it to.
 - **Optional Wiktionary database**: a Settings toggle turns the Wiktionary
   database off, leaving the app on the original Sakhr database alone,
-  English to Arabic and back. When it is on (the default), the dictionary
+  English to Arabic and back. When it is on, the dictionary
   understands word inflections and adds Wiktionary meanings to Arabic search.
 
 ## Screenshots
 
-| Light | Dark |
+| Home - light | Home - dark |
 | --- | --- |
-| ![Light theme](docs/screenshots/app-light.png) | ![Dark theme](docs/screenshots/app-dark.png) |
+| ![Home, light theme](docs/screenshots/home-light.jpg) | ![Home, dark theme](docs/screenshots/home-dark.jpg) |
 
-| Arabic search | English inflection redirect |
+| Arabic search - light | Arabic search - dark |
 | --- | --- |
-| ![Arabic search](docs/screenshots/app-arabic.png) | ![English inflection redirect](docs/screenshots/app-inflection.png) |
+| ![Arabic search, light theme](docs/screenshots/arabic-search-light.jpg) | ![Arabic search, dark theme](docs/screenshots/arabic-search-dark.jpg) |
 
-| Arabic inflection redirect | Settings |
+| English inflection redirect | Arabic inflection redirect |
 | --- | --- |
-| ![Arabic inflection redirect](docs/screenshots/app-inflection-ar.png) | ![Settings](docs/screenshots/app-settings.png) |
+| ![English inflection redirect](docs/screenshots/app-inflection.png) | ![Arabic inflection redirect](docs/screenshots/app-inflection-ar.png) |
+
+| Settings |
+| --- |
+| ![Settings](docs/screenshots/settings.jpg) |
 
 ## Download
 
