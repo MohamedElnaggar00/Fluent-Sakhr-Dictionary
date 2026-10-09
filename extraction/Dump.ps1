@@ -18,6 +18,16 @@ function Log($m) {
   Add-Content -Path $log -Value $line -Encoding utf8
   Write-Host $line
 }
+function Shot($name) {
+  try {
+    $b = [System.Windows.Forms.SystemInformation]::VirtualScreen
+    $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.CopyFromScreen($b.Left, $b.Top, 0, 0, $bmp.Size)
+    $bmp.Save("$OutDir\$name", [System.Drawing.Imaging.ImageFormat]::Png)
+    $g.Dispose(); $bmp.Dispose()
+  } catch { Log "shot failed: $_" }
+}
 
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
@@ -223,7 +233,7 @@ Log "UI ready: dlg=0x$($ui.dlg.ToInt64().ToString('X')) edit=0x$($ui.edit.ToInt6
 [WinD]::ShowWindowAsync($ui.dlg, 9) | Out-Null  # SW_RESTORE
 [WinD]::ShowWindowAsync($ui.dlg, 5) | Out-Null  # SW_SHOW
 [WinD]::SetForegroundWindow($ui.dlg) | Out-Null
-Start-Sleep -Seconds 12
+Start-Sleep -Seconds 2
 Log "dialog shown + foregrounded, engine settle wait done"
 Open-ProcHandle
 
@@ -232,6 +242,7 @@ Open-ProcHandle
 # finishing its lazy data load)
 $ready = $false
 for ($attempt = 0; $attempt -lt 4 -and -not $ready; $attempt++) {
+  Dismiss-Modals $script:proc.Id
   $okS = [WinD]::SetText($ui.edit, 'cat')
   Start-Sleep -Milliseconds 300
   $okC = [WinD]::Click($ui.btn)
@@ -240,10 +251,10 @@ for ($attempt = 0; $attempt -lt 4 -and -not $ready; $attempt++) {
     Start-Sleep -Seconds 1
     $c = [WinD]::LbCount($ui.lbMean, [ref]$okR)
     if ($okR -and $c -gt 0) { $ready = $true; Log "engine ready (cat -> $c meanings)"; break }
-    if ($i % 15 -eq 14) { Log "still waiting for engine... (${i}s)" }
+    if ($i % 15 -eq 14) { Log "still waiting for engine... (${i}s)"; Dismiss-Modals $script:proc.Id }
   }
 }
-if (-not $ready) { Log "FATAL: engine never returned meanings for CAT"; exit 1 }
+if (-not $ready) { Shot "fatal-readiness.png"; Log "FATAL: engine never returned meanings for CAT"; exit 1 }
 
 $words = Get-Content $WordsFile -Encoding utf8 | Select-Object -Skip $Start -First $Count
 Log "dumping $($words.Count) words from $WordsFile (skip $Start)"
@@ -308,7 +319,7 @@ foreach ($w in $words) {
   $rec = [ordered]@{ word = $word; match = $match; meanings = $meanings }
   $sw.WriteLine(($rec | ConvertTo-Json -Compress))
   $done++
-  if ($done % 100 -eq 0) { $sw.Flush(); Log "progress: $done/$($words.Count)" }
+  if ($done % 100 -eq 0) { $sw.Flush(); Dismiss-Modals $script:proc.Id; Log "progress: $done/$($words.Count)" }
 }
 $sw.Flush(); $sw.Close()
 Log "dump done: $done records -> $outPath"
