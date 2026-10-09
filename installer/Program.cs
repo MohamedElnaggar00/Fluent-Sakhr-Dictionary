@@ -121,7 +121,7 @@ static class Program
     static bool DotNetPresent()
     {
         string root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "dotnet", "shared", "Microsoft.NETCore.App");
-        return Directory.Exists(root) && Directory.GetDirectories(root).Any(d => Version.TryParse(Path.GetFileName(d), out var v) && v.Major == 8);
+        return Directory.Exists(root) && Directory.GetDirectories(root).Any(d => System.Version.TryParse(Path.GetFileName(d), out var v) && v.Major == 8);
     }
     static bool VcPresent() => Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64")?.GetValue("Installed") is int installed && installed == 1;
     static bool WarPresent() => Run("powershell.exe", "-NoProfile -NonInteractive -Command \"[bool](Get-AppxPackage -Name Microsoft.WindowsAppRuntime.1.6 | Where-Object { $_.Architecture -eq 'X64' -and $_.Status -eq 'Ok' })\"").Trim().Equals("True", StringComparison.OrdinalIgnoreCase);
