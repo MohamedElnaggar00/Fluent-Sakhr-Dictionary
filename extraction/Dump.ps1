@@ -92,7 +92,7 @@ public class WinD {
   // raw Win-1256 bytes of listbox item i; null on timeout/error
   public static byte[] LbTextA(IntPtr h, int i) {
     IntPtr res;
-    if (!SendMessageTimeout(h, LB_GETTEXTLEN, (IntPtr)i, IntPtr.Zero, SMTO_ABORTIFHUNG, 3000, out res)) return null;
+    if (SendMessageTimeout(h, LB_GETTEXTLEN, (IntPtr)i, IntPtr.Zero, SMTO_ABORTIFHUNG, 3000, out res) == IntPtr.Zero) return null;
     int len = res.ToInt32();
     if (len < 0 || len > 16384) return new byte[0];
     var buf = new byte[len + 2];
