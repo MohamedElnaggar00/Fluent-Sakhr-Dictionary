@@ -1,75 +1,112 @@
 <p dir="rtl" align="right"><b>قاموس صخر الحديث</b></p>
 <p dir="rtl" align="right">تطبيق قاموس صخر - إعادة احياء لبرنامج قاموس صخر الأصلي الصادر سنة 1996</p>
+<p dir="rtl" align="right"><a href="README.en.md">English version</a></p>
 
-# Sakhr Dictionary Revive
+<div dir="rtl">
 
-The classic Sakhr Dictionary reborn as a modern Windows app: native WinUI 3,
-Mica, instant search in both directions, full RTL support - the same design
-DNA as Fluent Prayer Times and Fluent Vantage Toolbar.
+## القصة
 
-## The app
+عام 1996 أصدرت شركة صخر برنامج قاموس صخر لأجهزة ويندوز، وكان امتدادًا لنسخة
+أقدم صدرت عام 1987 على أجهزة MSX العالمية، فتربّت عليه أجيال كاملة وهو
+القاموس الإلكتروني الأول الذي عرفه كثيرون منا في العالم العربي.
 
-- WinUI 3, native Fluent: Mica backdrop, smooth animations, light/dark theme
-- Instant prefix search over all 59,427 English lemmas, fully offline
-- 125,896 Arabic meanings with full diacritics, rendered correctly
-  (the original 1996 program could not even display them properly)
-- Arabic -> English: 36,627 Arabic entries from English Wiktionary, with the
-  1996 Sakhr data as a labeled supplement - never interleaved
-- Equal two-pane layout: live word list on the left, meanings (RTL) on the right
-- Customizable accent color (default teal #00A6A6), manual update check
-- English interface with formal Arabic content
+اليوم يعود القاموس من جديد في تطبيق حديث لنظام ويندوز، يحمل البيانات
+الأصلية كاملة كما استُخرجت من النسخة الأصلية للبرنامج، ويقدّمها بواجهة
+عصرية أصلية (WinUI 3) بتصميم Fluent، مع إمكانيات جديدة لم تكن موجودة في
+البرنامج الأصلي.
 
-### Download
+## المميزات
 
-Grab the latest release:
-[Releases](https://github.com/MohamedElnaggar00/Sakhr-Dictionary-Revive/releases)
+- **بحث فوري في الاتجاهين**: من الإنجليزية إلى العربية ومن العربية إلى
+  الإنجليزية، بمجرد كتابة أول حرف، ودون الحاجة إلى اتصال بالإنترنت.
+- **البيانات الأصلية كاملة**: 59,427 مدخلة إنجليزية و125,896 معنى عربيًا
+  من بيانات قاموس صخر الصادر سنة 1996، مع عرض التشكيل العربي عرضًا سليمًا
+  (وهو ما عجز عنه البرنامج الأصلي نفسه).
+- **تحويل الصيغ إلى أصولها في اللغتين**: إذا كتبت صيغة مشتقة مثل
+  ABANDONS أو فعلًا عربيًا متصرفًا أو جمعًا، يعرض التطبيق المدخلة الأصلية
+  مباشرة مع بيان نوع الصيغة (ABANDONS ← ABANDON).
+- **قاعدة Wiktionary العربية**: 36,627 مدخلة عربية من قاموس Wiktionary
+  الإنجليزي، تعرض معانيها أولًا ثم ترجمة قاموس صخر تحتها في قسم منفصل
+  بعنوان واضح، فلا تختلط المصادر أبدًا.
+- **واجهة أصلية حديثة**: تصميم Fluent بخلفية Mica، وسمة فاتحة وداكنة،
+  ودعم كامل للغة العربية واتجاهها من اليمين إلى اليسار.
+- **لون مميز حسب ذوقك**: اللون الافتراضي فيروزي (#00A6A6)، ويمكن اختيار
+  لون آخر من صفحة الإعدادات.
+- **تحديثات يدوية**: لا يتحقق التطبيق من التحديثات من تلقاء نفسه؛ زر واحد
+  في الإعدادات يكفي للتحقق عندما تشاء.
 
-Three flavors: setup (recommended), portable zip, and a small
-.NET-runtime-dependent installer.
+## لقطات من التطبيق
 
-### Build from source
+| الواجهة الفاتحة | الواجهة الداكنة |
+| --- | --- |
+| ![الواجهة الفاتحة](docs/screenshots/app-light.png) | ![الواجهة الداكنة](docs/screenshots/app-dark.png) |
+
+| البحث من العربية إلى الإنجليزية | تحويل الصيغ الإنجليزية |
+| --- | --- |
+| ![البحث بالعربية](docs/screenshots/app-arabic.png) | ![تحويل الصيغ](docs/screenshots/app-inflection.png) |
+
+| تحويل الصيغ العربية | صفحة الإعدادات |
+| --- | --- |
+| ![تحويل الصيغ العربية](docs/screenshots/app-inflection-ar.png) | ![الإعدادات](docs/screenshots/app-settings.png) |
+
+## التحميل
+
+من صفحة
+[الإصدارات](https://github.com/MohamedElnaggar00/Sakhr-Dictionary-Revive/releases)
+اختر ما يناسبك:
+
+- **المثبّت الكامل** (يُنصح به): يشمل كل ما يحتاجه التشغيل.
+- **النسخة المحمولة**: ملف مضغوط يعمل مباشرة دون تثبيت.
+- **مثبّت خفيف**: يتطلب وجود .NET 8 على الجهاز.
+
+## الأصل العتيق
+
+علبة **قاموس صخر الأصلي، نسخة MSX العالمية (1987)**، وهي الجد الأقدم لنسخة
+ويندوز الصادرة سنة 1996 التي يحييها هذا المشروع، والقاموس الذي تربّت عليه
+أجيال صغيرة. الصورتان من نسخة المطوّر الخاصة.
+
+| الواجهة | الخلف |
+| --- | --- |
+| ![واجهة علبة قاموس صخر الأصلي، نسخة MSX العالمية 1987](docs/box-front.jpg) | ![خلف علبة قاموس صخر الأصلي، نسخة MSX العالمية 1987](docs/box-back.jpg) |
+
+## البيانات
+
+يحتفظ الملف `data/dictionary.jsonl` بمجموعة البيانات كاملة: 59,427 سجلًا
+مطابقًا لقائمة الكلمات في البرنامج الأصلي، وقد التُقطت معانيها العربية من
+البرنامج الصادر سنة 1996 نفسه. يوجد منها 45,693 مدخلة بمعانٍ، أما الباقي
+فهو صيغ نادرة وأعلام لم تكن موجودة في فهرس بحث البرنامج الأصلي ذاته. وما
+زال البرنامج الأصلي محفوظًا كما هو في `data/legacy/sakhr.7z`.
+
+- **من الإنجليزية إلى العربية**: بيانات قاموس صخر الأصلي (1996)،
+  استُخرجت من نسخة المستخدم الخاصة.
+- **من العربية إلى الإنجليزية وجداول تحويل الصيغ**: من قاموس Wiktionary
+  الإنجليزي، استخرجها مشروع wiktextract ونشرها على
+  [kaikki.org](https://kaikki.org/dictionary/Arabic/)، بترخيص
+  [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+  (انظر `data/LICENSE-wiktionary-ar.txt`).
+
+شفرة التطبيق مرخصة برخصة MIT، أما البيانات المشتقة من Wiktionary فتخضع
+لترخيص CC BY-SA 4.0 مع نسب المصدر.
+
+## البناء من المصدر
 
 ```
 dotnet publish src/FluentSakhrDictionary/FluentSakhrDictionary.csproj -c Release -r win-x64
 ```
 
-Requires .NET 8 SDK and the Windows App SDK 1.6 workload. The app runs
-framework-dependent: the Windows App Runtime installer is bundled in setup.
+يتطلب الأمر .NET 8 SDK وحزمة Windows App SDK 1.6. يعمل التطبيق بنمط
+framework-dependent، ومثبّت Windows App Runtime مضمّن في ملف التثبيت.
 
-## The original
+## الشكر
 
-The box of the original **Sakhr Dictionary, MSX Al-Alamiah edition (1987)** -
-the ancestor of the 1996 Windows version this project revives, and the
-dictionary whole generations grew up with. Photos from the developer's own copy.
+المطوّر: محمد النجار
 
-| Front | Back |
-| --- | --- |
-| ![Front of the original Sakhr Dictionary box, MSX Al-Alamiah edition 1987](docs/box-front.jpg) | ![Back of the original Sakhr Dictionary box, MSX Al-Alamiah edition 1987](docs/box-back.jpg) |
-
-## The data
-
-`data/dictionary.jsonl` holds the full extracted dataset: 59,427 records
-aligned 1:1 with the original program's English word list, with the Arabic
-meanings captured from the original 1996 program itself (see `extraction/`).
-45,693 lemmas resolve to meanings; the remaining 13,734 are rare inflections
-and proper nouns absent from the original program's own search index.
-The original program lives on untouched in `data/legacy/sakhr.7z`.
-
-## Credits
-
-Developer: Mohamed Elnaggar
-
-Contributors: app.instinct
+المساهمون: app.instinct
 
 brought to you by app.instinct AI
 
-## License
+## الرخصة
 
 MIT
 
-## Data sources
-
-- **English -> Arabic:** the original 1996 Sakhr dictionary data, extracted from the user's own copy (59,427 lemmas, 125,896 meanings). See `extraction/` and `tools/`.
-- **Arabic -> English:** Arabic entries from English Wiktionary, machine-extracted by wiktextract and published at [kaikki.org](https://kaikki.org/dictionary/Arabic/) (36,627 entries, 60,395 glosses). License: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) - see `data/LICENSE-wiktionary-ar.txt`. Regenerate with `python3 tools/extract_wiktionary.py <kaikki-dump.jsonl> data/wiktionary-ar.jsonl`.
-
-The application source code is MIT licensed; the Wiktionary-derived data file ships under CC BY-SA 4.0 with attribution.
+</div>
