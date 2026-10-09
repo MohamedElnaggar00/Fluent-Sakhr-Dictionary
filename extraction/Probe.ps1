@@ -1,18 +1,111 @@
-# Fluent Sakhr - extraction probe.
-# Answers, on a GitHub Windows runner:
-#   1. Does the 1996 32-bit app launch and show its window?
-#   2. What are its window/child-control classes (automation surface)?
-#   3. Can we drive a lookup ("cat") with keystrokes? What does it show?
-#   4. Does the results pane put text on the clipboard (Ctrl+A/Ctrl+C)?
-#   5. Is Windows OCR available, and can the Arabic OCR pack be installed?
-# Everything is best-effort; findings go to $OutDir and the workflow artifact.
+# Fluent Sakhr - extraction probe v3.
+# v2 findings: app launches; main window class is DictWClass1 ("A/E Dictionary") but
+# starts HIDDEN; a "Fatal Application Exit" dialog ("Error in DLL'S") appears from a
+# second process; v2 matched the wrong window (IME) and hung on blocking UI calls.
+# v3: dismiss fatal dialogs, target DictWClass1, timeout-guarded SendMessage only,
+# no SendKeys, per-step logging, process tree + module dumps.
 $ErrorActionPreference = 'Continue'
 $OutDir = "$env:RUNNER_TEMP\probe-results"
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 $log = "$OutDir\probe.log"
-function Log($m) { $m | Tee-Object -FilePath $log -Append }
+function Log($m) { "{0:HH:mm:ss.fff} {1}" -f (Get-Date), $m | Tee-Object -FilePath $log -Append }
 
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+
+# --- C# interop ------------------------------------------------------------
+$cs = @'
+using System;
+using System.Text;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+public class WinP {
+  public delegate bool EnumProc(IntPtr h, IntPtr l);
+  [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc cb, IntPtr l);
+  [DllImport("user32.dll")] static extern bool EnumChildWindows(IntPtr p, EnumProc cb, IntPtr l);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c);
+  [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr h, int c);
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)]
+  public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr w, string l, uint flags, uint timeout, out IntPtr result);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)]
+  public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr w, IntPtr l, uint flags, uint timeout, out IntPtr result);
+  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
+
+  public const uint SMTO_ABORTIFHUNG = 0x0002;
+  public const uint WM_SETTEXT = 0x000C;
+  public const uint WM_GETTEXT = 0x000D;
+  public const uint BM_CLICK = 0x00F5;
+  public const uint WM_KEYDOWN = 0x0100;
+  public const uint WM_KEYUP = 0x0101;
+  public const uint WM_CHAR = 0x0102;
+  public const uint VK_RETURN = 0x0D;
+
+  public static string Txt(IntPtr h) { var s = new StringBuilder(512); GetWindowText(h, s, 512); return s.ToString(); }
+  public static string Cls(IntPtr h) { var s = new StringBuilder(256); GetClassName(h, s, 256); return s.ToString(); }
+
+  public static List<string> Top() {
+    var r = new List<string>();
+    EnumWindows((h, l) => {
+      uint pid; GetWindowThreadProcessId(h, out pid);
+      r.Add((IsWindowVisible(h) ? "vis " : "hid ") + string.Format("0x{0:X} pid={1} class=[{2}] title=[{3}]", h.ToInt64(), pid, Cls(h), Txt(h)));
+      return true;
+    }, IntPtr.Zero);
+    return r;
+  }
+  public static List<IntPtr> TopHwnds() {
+    var r = new List<IntPtr>();
+    EnumWindows((h, l) => { r.Add(h); return true; }, IntPtr.Zero);
+    return r;
+  }
+  public static List<string> Kids(IntPtr p) {
+    var r = new List<string>();
+    EnumChildWindows(p, (h, l) => {
+      r.Add(string.Format("  0x{0:X} class=[{1}] text=[{2}]", h.ToInt64(), Cls(h), Txt(h)));
+      return true;
+    }, IntPtr.Zero);
+    return r;
+  }
+  public static List<IntPtr> KidHwnds(IntPtr p) {
+    var r = new List<IntPtr>();
+    EnumChildWindows(p, (h, l) => { r.Add(h); return true; }, IntPtr.Zero);
+    return r;
+  }
+  // returns true if the SendMessageTimeout call completed (did not time out)
+  public static bool Click(IntPtr h) {
+    IntPtr res;
+    return SendMessageTimeout(h, BM_CLICK, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 3000, out res) != IntPtr.Zero;
+  }
+  public static bool SetText(IntPtr h, string t) {
+    IntPtr res;
+    return SendMessageTimeout(h, WM_SETTEXT, IntPtr.Zero, t, SMTO_ABORTIFHUNG, 3000, out res) != IntPtr.Zero;
+  }
+  public static bool Key(IntPtr h, uint vk) {
+    bool ok = PostMessage(h, WM_KEYDOWN, (IntPtr)vk, IntPtr.Zero);
+    PostMessage(h, WM_KEYUP, (IntPtr)vk, IntPtr.Zero);
+    return ok;
+  }
+  public static bool CharMsg(IntPtr h, char c) {
+    return PostMessage(h, WM_CHAR, (IntPtr)c, IntPtr.Zero);
+  }
+}
+'@
+Add-Type -TypeDefinition $cs -ReferencedAssemblies System.Windows.Forms
+
+function Shot($name) {
+  try {
+    $vs = [System.Windows.Forms.SystemInformation]::VirtualScreen
+    $bmp = New-Object System.Drawing.Bitmap $vs.Width, $vs.Height
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.CopyFromScreen($vs.Left, $vs.Top, 0, 0, $bmp.Size)
+    $bmp.Save("$OutDir\$name", [System.Drawing.Imaging.ImageFormat]::Png)
+    $g.Dispose(); $bmp.Dispose()
+    Log "screenshot saved: $name"
+  } catch { Log "screenshot $name failed: $_" }
+}
 
 # --- 1. unpack -------------------------------------------------------------
 $sevenZip = "C:\Program Files\7-Zip\7z.exe"
@@ -26,123 +119,113 @@ Get-ChildItem -Path $dest -Recurse | Select-Object FullName, Length |
 
 # --- 2. launch -------------------------------------------------------------
 $proc = Start-Process -FilePath $exe.FullName -WorkingDirectory $exe.DirectoryName -PassThru
-Start-Sleep -Seconds 6
-Log "process started: id=$($proc.Id) hasExited=$($proc.HasExited)"
-Get-Process | Where-Object { $_.Id -eq $proc.Id } |
-  Select-Object Id, ProcessName, MainWindowTitle, MainWindowHandle, Responding |
-  Format-List | Out-File "$OutDir\process.txt"
-$pi = Get-Process -Id $proc.Id
-Log "MainWindowHandle=0x$($pi.MainWindowHandle.ToString('X')) title=[$($pi.MainWindowTitle)] responding=$($pi.Responding)"
+Log "launched pid=$($proc.Id)"
+Start-Sleep -Seconds 8
+Log "hasExited=$($proc.HasExited)"
 
-function Shot($name) {
-  $vs = [System.Windows.Forms.SystemInformation]::VirtualScreen
-  $bmp = New-Object System.Drawing.Bitmap $vs.Width, $vs.Height
-  $g = [System.Drawing.Graphics]::FromImage($bmp)
-  $g.CopyFromScreen($vs.Left, $vs.Top, 0, 0, $bmp.Size)
-  $bmp.Save("$OutDir\$name", [System.Drawing.Imaging.ImageFormat]::Png)
-  $g.Dispose(); $bmp.Dispose()
-  Log "screenshot saved: $name"
-}
+# process tree + modules
+Get-CimInstance Win32_Process |
+  Select-Object ProcessId, ParentProcessId, Name, CommandLine |
+  Format-List | Out-File "$OutDir\processes.txt"
+Log "process tree dumped"
+try {
+  (Get-Process -Id $proc.Id).Modules | Select-Object ModuleName, FileName |
+    Format-Table -AutoSize | Out-File "$OutDir\modules.txt" -Width 200
+  Log "modules dumped: $((Get-Process -Id $proc.Id).Modules.Count) modules"
+} catch { Log "module dump failed: $_" }
+
 Shot "probe-01-launched.png"
 
 # --- 3. window inventory ---------------------------------------------------
-$cs = @'
-using System;
-using System.Text;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-public class WinProbe {
-  [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc cb, IntPtr l);
-  [DllImport("user32.dll")] static extern bool EnumChildWindows(IntPtr p, EnumProc cb, IntPtr l);
-  [DllImport("user32.dll")] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
-  [DllImport("user32.dll")] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
-  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
-  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
-  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c);
-  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
-  public delegate bool EnumProc(IntPtr h, IntPtr l);
-  public static List<string> Top() {
-    var r = new List<string>();
-    EnumWindows((h, l) => {
-      var t = new StringBuilder(256); GetWindowText(h, t, 256);
-      var c = new StringBuilder(256); GetClassName(h, c, 256);
-      uint pid; GetWindowThreadProcessId(h, out pid);
-      r.Add((IsWindowVisible(h) ? "vis " : "hid ") + string.Format("0x{0:X} pid={1} class=[{2}] title=[{3}]", h.ToInt64(), pid, c, t));
-      return true;
-    }, IntPtr.Zero);
-    return r;
-  }
-  public static List<string> Kids(IntPtr p) {
-    var r = new List<string>();
-    EnumChildWindows(p, (h, l) => {
-      var t = new StringBuilder(256); GetWindowText(h, t, 256);
-      var c = new StringBuilder(256); GetClassName(h, c, 256);
-      r.Add(string.Format("  0x{0:X} class=[{1}] text=[{2}]", h.ToInt64(), c, t));
-      return true;
-    }, IntPtr.Zero);
-    return r;
-  }
-}
-'@
-Add-Type -TypeDefinition $cs -ReferencedAssemblies System.Windows.Forms
-$tops = [WinProbe]::Top()
+$tops = [WinP]::Top()
 $tops | Out-File "$OutDir\windows.txt"
-Log "visible top-level windows: $($tops.Count)"
-$appHwnd = $null
-foreach ($line in $tops) {
-  if ($line -match "pid=$($proc.Id) ") { $appHwnd = $line }
-  elseif ($line -match "pid=$($proc.Id)$") { $appHwnd = $line }
+Log "top-level windows: $($tops.Count)"
+
+# --- 4. dismiss Fatal Application Exit dialogs -----------------------------
+foreach ($h in [WinP]::TopHwnds()) {
+  $t = [WinP]::Txt($h); $c = [WinP]::Cls($h)
+  if ($c -eq '#32770' -and $t -match 'Fatal Application Exit') {
+    Log "fatal dialog found: 0x$($h.ToInt64().ToString('X')) title=[$t]"
+    foreach ($k in [WinP]::KidHwnds($h)) {
+      if ([WinP]::Cls($k) -eq 'Button' -and [WinP]::Txt($k) -match 'OK') {
+        $ok = [WinP]::Click($k)
+        Log "clicked OK on fatal dialog: sent=$ok"
+      }
+    }
+  }
 }
-if (-not $appHwnd) { Log "no top-level window owned by pid $($proc.Id) - dumping all windows for review" }
-Log "app window line: $appHwnd"
-if ($appHwnd -match '0x([0-9A-F]+)') {
-  $hwnd = [IntPtr]([Convert]::ToInt64($Matches[1], 16))
-  [WinProbe]::Kids($hwnd) | Out-File "$OutDir\children.txt"
-  Log "child windows dumped"
-  [WinProbe]::ShowWindow($hwnd, 9) | Out-Null   # SW_RESTORE
-  [WinProbe]::SetForegroundWindow($hwnd) | Out-Null
-  Start-Sleep -Milliseconds 800
+Start-Sleep -Seconds 2
+Shot "probe-02-after-dialog-dismiss.png"
 
-  # --- 4. drive a lookup -------------------------------------------------
-  [System.Windows.Forms.SendKeys]::SendWait("cat")
-  Start-Sleep -Milliseconds 500
-  [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
+# --- 5. locate the app window by class -------------------------------------
+$appHwnd = [IntPtr]::Zero
+foreach ($h in [WinP]::TopHwnds()) {
+  if ([WinP]::Cls($h) -eq 'DictWClass1') { $appHwnd = $h; break }
+}
+if ($appHwnd -eq [IntPtr]::Zero) {
+  Log "FATAL: no DictWClass1 window found"
+} else {
+  Log "app window: 0x$($appHwnd.ToInt64().ToString('X')) title=[$([WinP]::Txt($appHwnd))]"
+  [WinP]::Kids($appHwnd) | Out-File "$OutDir\children.txt"
+  Log "children dumped: $([WinP]::KidHwnds($appHwnd).Count) child windows"
+
+  [WinP]::ShowWindowAsync($appHwnd, 9) | Out-Null  # SW_RESTORE, non-blocking
+  [WinP]::ShowWindowAsync($appHwnd, 5) | Out-Null  # SW_SHOW
+  [WinP]::SetForegroundWindow($appHwnd) | Out-Null
   Start-Sleep -Seconds 2
-  Shot "probe-02-after-cat.png"
+  Shot "probe-03-window-shown.png"
 
-  # --- 5. clipboard probe ------------------------------------------------
-  [System.Windows.Forms.SendKeys]::SendWait("^a")
-  Start-Sleep -Milliseconds 300
-  [System.Windows.Forms.SendKeys]::SendWait("^c")
-  Start-Sleep -Milliseconds 800
+  # find edit control + likely lookup button among children
+  $editHwnd = [IntPtr]::Zero
+  $btnHwnd = [IntPtr]::Zero
+  foreach ($k in [WinP]::KidHwnds($appHwnd)) {
+    $kc = [WinP]::Cls($k)
+    if ($editHwnd -eq [IntPtr]::Zero -and $kc -match 'edit') { $editHwnd = $k }
+    if ($btnHwnd -eq [IntPtr]::Zero -and $kc -match 'button') { $btnHwnd = $k }
+  }
+  Log "edit child: 0x$($editHwnd.ToInt64().ToString('X'))  button child: 0x$($btnHwnd.ToInt64().ToString('X'))"
+
+  # --- 6. drive lookup "cat" ---------------------------------------------
+  if ($editHwnd -ne [IntPtr]::Zero) {
+    $ok = [WinP]::SetText($editHwnd, 'cat')
+    Log "WM_SETTEXT cat on edit: sent=$ok"
+  } else {
+    foreach ($ch in 'c','a','t') { [WinP]::CharMsg($appHwnd, $ch) | Out-Null }
+    Log "posted WM_CHAR cat to main window (no edit child found)"
+  }
+  Start-Sleep -Milliseconds 500
+  if ($btnHwnd -ne [IntPtr]::Zero) {
+    $ok = [WinP]::Click($btnHwnd)
+    Log "BM_CLICK on first button: sent=$ok"
+  } else {
+    [WinP]::Key($appHwnd, [WinP]::VK_RETURN) | Out-Null
+    Log "posted Enter to main window"
+  }
+  Start-Sleep -Seconds 3
+  Shot "probe-04-after-cat.png"
+
+  # --- 7. clipboard probe (STA-guarded) ------------------------------------
   try {
-    $clip = [System.Windows.Forms.Clipboard]::GetText()
-    Log "clipboard length: $($clip.Length)"
-    $clip | Out-File "$OutDir\clipboard.txt" -Encoding utf8
+    $clipText = $null
+    $th = [System.Threading.Thread]::new({ $script:clipText = [System.Windows.Forms.Clipboard]::GetText() })
+    $th.SetApartmentState([System.Threading.ApartmentState]::STA)
+    $th.Start()
+    if ($th.Join(5000)) {
+      Log "clipboard length: $($script:clipText.Length)"
+      $script:clipText | Out-File "$OutDir\clipboard.txt" -Encoding utf8
+    } else { Log "clipboard read timed out (5s)" }
   } catch { Log "clipboard read failed: $_" }
 }
 
-# --- 6. Windows OCR --------------------------------------------------------
+# --- 8. OCR availability (no install this time) ----------------------------
 try {
   Add-Type -AssemblyName System.Runtime.WindowsRuntime
   $null = [Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType=WindowsRuntime]
   $langs = [Windows.Media.Ocr.OcrEngine]::AvailableRecognizerLanguages
-  $langs | ForEach-Object { Log "OCR language: $($_.LanguageTag) ($($_.DisplayName))" }
+  $langs | ForEach-Object { Log "OCR language: $($_.LanguageTag)" }
   $langs | Out-File "$OutDir\ocr-langs.txt"
-  Log "OCR MaxImageDimension: $([Windows.Media.Ocr.OcrEngine]::MaxImageDimension)"
 } catch { Log "OCR API probe failed: $_" }
 
-try {
-  $cap = Add-WindowsCapability -Online -Name "Language.OCR~~~ar-SA~0.0.1.0" -ErrorAction Stop
-  Log "Arabic OCR install: $($cap.State)"
-} catch { Log "Arabic OCR install failed: $_" }
-try {
-  $langs2 = [Windows.Media.Ocr.OcrEngine]::AvailableRecognizerLanguages
-  $langs2 | ForEach-Object { Log "post-install OCR language: $($_.LanguageTag)" }
-  $langs2 | Out-File "$OutDir\ocr-langs-after.txt"
-} catch { Log "post-install OCR probe failed: $_" }
-
-# --- 7. cleanup ------------------------------------------------------------
-try { $proc.CloseMainWindow() | Out-Null; Start-Sleep -Seconds 2 } catch {}
+# --- 9. cleanup ------------------------------------------------------------
 try { if (-not $proc.HasExited) { $proc.Kill() } } catch {}
 Log "probe done"
