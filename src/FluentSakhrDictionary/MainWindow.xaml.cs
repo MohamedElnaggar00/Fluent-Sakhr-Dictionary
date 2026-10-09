@@ -122,9 +122,9 @@ public partial class MainWindow : Window
             "about" => typeof(AboutPage),
             _ => typeof(SearchPage),
         };
-        // No entrance transition: DrillIn froze mid-animation on his machine (v0.4.0 Settings hang),
-        // leaving the page stuck offset with a dead scrollbar.
-        ContentFrame.Navigate(page);
+        // DrillIn entrance transition (his choice: keep the animation). The re-entrancy guard in
+        // SettingsPage.Language_Changed prevents a re-navigation from landing mid-transition.
+        ContentFrame.Navigate(page, null, new Microsoft.UI.Xaml.Media.Animation.DrillInNavigationTransitionInfo());
     }
 
     // ---------- accent color (same pattern as Fluent Prayer Times / Fluent Vantage Toolbar) ----------
