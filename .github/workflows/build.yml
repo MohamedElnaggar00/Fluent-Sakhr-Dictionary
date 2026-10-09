@@ -80,6 +80,8 @@ jobs:
           if (-not (Test-Path app-sakhr-only.png)) { Write-Error "Sakhr-only screenshot missing"; exit 1 }
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-sakhr-only-ar.png",'--shot-word','قط' -PassThru -Wait
           if (-not (Test-Path app-sakhr-only-ar.png)) { Write-Error "Sakhr-only Arabic screenshot missing"; exit 1 }
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-sakhr-only-wik.png",'--shot-word','هاتان' -PassThru -Wait
+          if (-not (Test-Path app-sakhr-only-wik.png)) { Write-Error "Sakhr-only Wiktionary-word screenshot missing"; exit 1 }
           Remove-Item "$env:APPDATA\SakhrDictionaryRevive\settings.json" -Force
           Write-Host "Screenshots captured"
 
@@ -98,3 +100,4 @@ jobs:
             app-sakhr-only-ar.png
             app-home.png
             app-enriched.png
+            app-sakhr-only-wik.png
