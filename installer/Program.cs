@@ -124,7 +124,7 @@ static class Program
         return Directory.Exists(root) && Directory.GetDirectories(root).Any(d => System.Version.TryParse(Path.GetFileName(d), out var v) && v.Major == 8);
     }
     static bool VcPresent() => Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64")?.GetValue("Installed") is int installed && installed == 1;
-    static bool WarPresent() => Run("powershell.exe", "-NoProfile -NonInteractive -Command \"[bool](Get-AppxPackage -Name Microsoft.WindowsAppRuntime.1.6 | Where-Object { $_.Architecture -eq 'X64' -and $_.Status -eq 'Ok' })\"").Trim().Equals("True", StringComparison.OrdinalIgnoreCase);
+    static bool WarPresent() => Run("powershell.exe", "-NoProfile -NonInteractive -Command \"[bool](Get-AppxPackage -AllUsers -Name Microsoft.WindowsAppRuntime.1.6 | Where-Object { $_.Architecture -eq 'X64' -and $_.Status -eq 'Ok' })\"").Trim().Equals("True", StringComparison.OrdinalIgnoreCase);
     static void Dependency(string url, string arguments)
     {
         string file = Path.Combine(Path.GetTempPath(), "SakhrDictionaryRevive-" + Guid.NewGuid() + ".exe");
