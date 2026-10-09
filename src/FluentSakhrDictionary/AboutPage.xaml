@@ -25,7 +25,7 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1">
                 <StackPanel Spacing="8">
-                    <HyperlinkButton Content="brought to you by Instinct"
+                    <HyperlinkButton x:Name="CreditLink" Content="brought to you by Instinct"
                                      NavigateUri="https://instinct.com"
                                      FontSize="14" FontWeight="SemiBold" Padding="0"/>
                     <TextBlock x:Name="DevText" FontSize="13"/>
