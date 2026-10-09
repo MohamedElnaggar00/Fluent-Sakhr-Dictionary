@@ -1,0 +1,22 @@
+name: Extract EN->AR translations for empty Sakhr records
+on:
+  workflow_dispatch:
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download raw Wiktextract extract (2.8GB gz, kaikki.org)
+        run: curl -fL --retry 3 -o /tmp/en.jsonl.gz https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz
+      - name: Extract Arabic translations for empty Sakhr records
+        run: zcat /tmp/en.jsonl.gz | grep --line-buffered -F '"translations"' | python3 tools/extract_translations.py
+      - name: Sanity check
+        run: |
+          wc -l data/translations-en-ar.jsonl
+          head -3 data/translations-en-ar.jsonl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: translations
+          path: data/translations-en-ar.jsonl
