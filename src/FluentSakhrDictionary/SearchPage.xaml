@@ -48,7 +48,7 @@
                     BorderThickness="1">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <TextBlock x:Name="WordTitle" FontSize="34" FontWeight="SemiBold" FlowDirection="RightToLeft" Text="قاموس صخر"/>
+                        <TextBlock x:Name="WordTitle" FontSize="34" FontWeight="SemiBold" FlowDirection="RightToLeft" Text="قاموس صخر الحديث"/>
                         <TextBlock x:Name="WordSubtitle" FontSize="13" TextWrapping="Wrap" Margin="0,2,0,18" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Sakhr Dictionary Revive - English ⇄ Arabic"/>
                         <TextBlock x:Name="HomeOfflineText" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,18" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Works fully offline - no internet needed."/>
                         <ItemsRepeater x:Name="MeaningsRepeater">
