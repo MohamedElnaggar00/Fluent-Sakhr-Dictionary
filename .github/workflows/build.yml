@@ -19,8 +19,12 @@ jobs:
       - name: Publish (WinUI 3, win-x64, framework-dependent)
         shell: bash
         run: |
-          dotnet publish src/FluentSakhrDictionary/FluentSakhrDictionary.csproj -c Release -r win-x64 -p:Platform=x64 --self-contained false \
-            -p:DebugType=none -o publish
+          if ! dotnet publish src/FluentSakhrDictionary/FluentSakhrDictionary.csproj -c Release -r win-x64 -p:Platform=x64 --self-contained false \
+            -p:DebugType=none -o publish; then
+            echo "=== XamlCompiler output.json ==="
+            cat src/FluentSakhrDictionary/obj/x64/Release/net8.0-windows10.0.19041.0/win-x64/output.json 2>/dev/null || echo "no output.json"
+            exit 1
+          fi
 
       - name: Verify output structure
         shell: pwsh
