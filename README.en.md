@@ -17,8 +17,11 @@ capabilities the original program never had.
 
 ## Features
 
+- **Fully offline**: both databases ship inside the app, so every search
+  happens right on your device. The app never needs the internet, except
+  if you press the update check button in Settings.
 - **Instant search in both directions**: English -> Arabic and
-  Arabic -> English, from the very first letter, fully offline.
+  Arabic -> English, from the very first letter.
 - **The complete original data**: 59,427 English lemmas and 125,896 Arabic
   meanings from the 1996 Sakhr dictionary, with Arabic diacritics rendered
   correctly (something the original program itself could not do).

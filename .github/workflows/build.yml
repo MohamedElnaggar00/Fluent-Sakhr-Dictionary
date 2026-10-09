@@ -69,6 +69,13 @@ jobs:
           if (-not (Test-Path app-inflection.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Inflection screenshot missing"; exit 1 }
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-inflection-ar.png",'--shot-word','يكتبون' -PassThru -Wait
           if (-not (Test-Path app-inflection-ar.png)) { if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; Write-Error "Arabic inflection screenshot missing"; exit 1 }
+          New-Item -ItemType Directory -Force "$env:APPDATA\SakhrDictionaryRevive" | Out-Null
+          '{"UseWiktionary":false}' | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-sakhr-only.png",'--shot-word','ABANDONS' -PassThru -Wait
+          if (-not (Test-Path app-sakhr-only.png)) { Write-Error "Sakhr-only screenshot missing"; exit 1 }
+          $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-sakhr-only-ar.png",'--shot-word','قط' -PassThru -Wait
+          if (-not (Test-Path app-sakhr-only-ar.png)) { Write-Error "Sakhr-only Arabic screenshot missing"; exit 1 }
+          Remove-Item "$env:APPDATA\SakhrDictionaryRevive\settings.json" -Force
           Write-Host "Screenshots captured"
 
       - uses: actions/upload-artifact@v4
@@ -82,3 +89,5 @@ jobs:
             app-settings.png
             app-inflection.png
             app-inflection-ar.png
+            app-sakhr-only.png
+            app-sakhr-only-ar.png
