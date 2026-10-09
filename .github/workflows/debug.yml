@@ -4,8 +4,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  debug:
+  variants:
     runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [v1-nopages, v2-strippedcsproj, v3-pagesonly]
     steps:
       - uses: actions/checkout@v4
 
@@ -13,15 +17,8 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Build known-good fluent-prayer-times (environment check)
+      - name: Build variant
         shell: bash
         run: |
-          git clone -q --depth 1 https://github.com/MohamedElnaggar00/fluent-prayer-times fpt
-          dotnet publish fpt/FluentPrayerTimes.csproj -c Release -r win-x64 -p:Platform=x64 --self-contained false -p:DebugType=none -o fpt-publish 2>&1 | tail -5
-          echo "FPT_BUILD_DONE"
-
-      - name: Build minimal WinUI skeleton (content check)
-        shell: bash
-        run: |
-          dotnet publish debug/mini/mini.csproj -c Release -r win-x64 -p:Platform=x64 --self-contained false -p:DebugType=none -o mini-publish 2>&1 | tail -5
-          echo "MINI_BUILD_DONE"
+          V="${{ matrix.variant }}"
+          dotnet publish "debug/$V/FluentSakhrDictionary.csproj" -c Release -r win-x64 -p:Platform=x64 --self-contained false -p:DebugType=none -o "out-$V" 2>&1 | tail -4
