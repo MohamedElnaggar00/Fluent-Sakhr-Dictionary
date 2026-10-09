@@ -96,6 +96,8 @@ jobs:
         run: |
           $p = Start-Process setup/SakhrDictionaryRevive-Setup.exe -ArgumentList '--preview',"$PWD/installer-screen.png" -PassThru -Wait
           if ($p.ExitCode -ne 0 -or -not (Test-Path installer-screen.png)) { throw "Installer render failed" }
+          $p = Start-Process setup/SakhrDictionaryRevive-Setup.exe -ArgumentList '--preview-dark',"$PWD/installer-screen-dark.png" -PassThru -Wait
+          if ($p.ExitCode -ne 0 -or -not (Test-Path installer-screen-dark.png)) { throw "Installer dark render failed" }
           $p = Start-Process setup/SakhrDictionaryRevive-Setup.exe -ArgumentList '--verify-install' -PassThru -Wait
           if ($p.ExitCode -ne 0) { throw "Installer integration test failed: $($p.ExitCode)" }
           $exe = Join-Path $env:ProgramFiles 'SakhrDictionaryRevive/SakhrDictionaryRevive.exe'
@@ -111,6 +113,7 @@ jobs:
           name: release-verified
           path: |
             installer-screen.png
+            installer-screen-dark.png
             app-light.png
 
       - name: Create pre-release with the three assets
@@ -119,7 +122,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VER="${{ steps.v.outputs.version }}"
-          gh release create "v$VER" --prerelease --title "Sakhr Dictionary Revive v$VER" \
+          PRE=""; if [[ "$VER" == 0.* ]]; then PRE="--prerelease"; fi
+          gh release create "v$VER" $PRE --title "Sakhr Dictionary Revive v$VER" \
             --notes "Sakhr Dictionary Revive: the 1996 Sakhr dictionary reborn in WinUI 3. English-Arabic (59,427 lemmas) and Arabic-English (Wiktionary), fully offline. brought to you by app.instinct AI" \
             "SakhrDictionaryRevive-v$VER-portable-win-x64.zip" \
             "SakhrDictionaryRevive-v$VER-installer-win-x64.exe" \
