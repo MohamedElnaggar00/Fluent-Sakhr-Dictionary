@@ -82,6 +82,7 @@ public partial class SearchPage : Page
             _currentInflection = null;
             _currentArInflection = null;
             _currentRev = DictionaryService.SearchArabic(q);
+            if (!_useWiktionary) _currentRev = _currentRev.Where(r => r.SakhrLemmas.Length > 0).ToArray();
             ResultsList.FlowDirection = FlowDirection.RightToLeft;
             ResultsList.ItemsSource = _currentRev;
             var exact = _currentRev.FirstOrDefault(x => DictionaryService.NormalizeArabic(x.ArabicTerm) == DictionaryService.NormalizeArabic(q));
@@ -271,7 +272,12 @@ public partial class SearchPage : Page
             EnglishRepeater.Visibility = Visibility.Collapsed;
             EnglishRepeater.ItemsSource = null;
         }
-        WordSubtitle.Text = (rev.Pos.Length > 0 ? rev.Pos + " - " : "") + string.Join(" + ", subtitle);
+        WordSubtitle.Text = (rev.Pos.Length > 0 && subtitle.Count > 0 ? rev.Pos + " - " : "") + string.Join(" + ", subtitle);
+        if (subtitle.Count == 0)
+        {
+            NotFoundText.Text = "Not found.";
+            NotFoundText.Visibility = Visibility.Visible;
+        }
     }
 
     void ResetPane()
