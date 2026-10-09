@@ -40,6 +40,21 @@ public class WinQ {
   [DllImport("kernel32.dll")] public static extern bool CloseHandle(IntPtr h);
   [DllImport("kernel32.dll")] public static extern int VirtualQueryEx(IntPtr proc, IntPtr addr, out MEMORY_BASIC_INFORMATION mbi, uint len);
   [DllImport("kernel32.dll")] public static extern bool ReadProcessMemory(IntPtr proc, IntPtr addr, byte[] buf, IntPtr size, out IntPtr read);
+  public static IntPtr GetItemData(IntPtr lb, int i) {
+    IntPtr r;
+    SendMessageTimeout(lb, 0x0199, (IntPtr)i, IntPtr.Zero, 2, 2000, out r); // LB_GETITEMDATA
+    return r;
+  }
+  public static byte[] ReadMem(int pid, IntPtr addr, int size) {
+    IntPtr proc = OpenProcess(0x0410, false, pid);
+    if (proc == IntPtr.Zero) return null;
+    try {
+      byte[] buf = new byte[size]; IntPtr read;
+      if (!ReadProcessMemory(proc, addr, buf, (IntPtr)size, out read) || read.ToInt64() <= 0) return null;
+      if (read.ToInt64() < size) Array.Resize(ref buf, (int)read.ToInt64());
+      return buf;
+    } finally { CloseHandle(proc); }
+  }
 
   [StructLayout(LayoutKind.Sequential)]
   public struct MEMORY_BASIC_INFORMATION {
@@ -169,12 +184,18 @@ Start-Sleep -Seconds 3
 Shot "probe-cat-lookup.png"
 
 Log "lbWord count: $([WinQ]::LbCount($lbWord))  lbMean count: $([WinQ]::LbCount($lbMean))"
+$cp1256 = [Text.Encoding]::GetEncoding(1256)
 for ($i = 0; $i -lt 10; $i++) {
-  $sb = New-Object System.Text.StringBuilder 4096
-  $w = [WinQ]::LbTextW($lbMean, $i, $sb)
-  $a = [WinQ]::LbTextA($lbMean, $i)
-  $alen = if ($null -eq $a) { 'null' } else { $a.Length }
-  Log "lbMean[$i]: gettextW=$w textW=[$sb] bytesA_len=$alen bytesA=[$(if ($a) { ($a | ForEach-Object { $_.ToString('X2') }) -join ' ' })]"
+  $idata = [WinQ]::GetItemData($lbMean, $i)
+  if ($idata -eq [IntPtr]::Zero) { Log "lbMean[$i]: itemdata=0"; continue }
+  $mem = [WinQ]::ReadMem($proc.Id, $idata, 512)
+  if ($null -eq $mem) { Log "lbMean[$i]: itemdata=0x$($idata.ToInt64().ToString('X')) READ FAILED"; continue }
+  $hex = ($mem[0..47] | ForEach-Object { $_.ToString('X2') }) -join ' '
+  # decode cp1256 string starting at offset 8 until NUL
+  $bytes = New-Object System.Collections.Generic.List[byte]
+  for ($o = 8; $o -lt $mem.Length; $o++) { if ($mem[$o] -eq 0) { break }; $bytes.Add($mem[$o]) }
+  $txt = $cp1256.GetString($bytes.ToArray())
+  Log "lbMean[$i]: itemdata=0x$($idata.ToInt64().ToString('X')) hex=[$hex] decoded=[$txt]"
 }
 $sb2 = New-Object System.Text.StringBuilder 4096
 $w2 = [WinQ]::LbTextW($lbWord, 0, $sb2)
@@ -199,7 +220,7 @@ try {
 
 # memory scan for known Win-1256 byte sequences of cat's meanings
 $needles = @{
-  'raf3'     = [byte[]](0xD1,0xDD,0xDA,0x20,0xC7,0xE1,0xD3,0xC7,0xC9)
+  'raf3'     = [byte[]](0xD1,0xDD,0xDA,0x20,0xC7,0xE1,0xE3,0xD3,0xC7,0xC9)
   'khabitha' = [byte[]](0xCE,0xC8,0xED,0xCB,0xC9)
 }
 foreach ($k in $needles.Keys) {
