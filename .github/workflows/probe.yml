@@ -1,0 +1,20 @@
+name: extraction-probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run probe
+        shell: powershell
+        run: .\extraction\Probe.ps1
+      - name: Upload probe results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: probe-results
+          path: ${{ env.RUNNER_TEMP }}\probe-results
