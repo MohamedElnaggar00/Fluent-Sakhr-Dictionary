@@ -293,6 +293,7 @@ foreach ($w in $words) {
 
   # matched lemma from the word listbox current selection (owner-drawn: item data is a record pointer)
   $match = ''
+  $okSel = $false
   $sel = [WinD]::LbCurSel($ui.lbWord, [ref]$okSel)
   if ($okSel -and $sel -ge 0) {
     $wptr = [WinD]::GetItemData($ui.lbWord, $sel)
@@ -303,6 +304,7 @@ foreach ($w in $words) {
   }
 
   $meanings = @()
+  $okMC = $false
   $mc = [WinD]::LbCount($ui.lbMean, [ref]$okMC)
   if ($okMC -and $mc -gt 0) {
     for ($i = 0; $i -lt $mc; $i++) {
