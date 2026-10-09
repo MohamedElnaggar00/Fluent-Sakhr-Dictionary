@@ -124,7 +124,7 @@ jobs:
           VER="${{ steps.v.outputs.version }}"
           PRE=""; if [[ "$VER" == 0.* ]]; then PRE="--prerelease"; fi
           gh release create "v$VER" $PRE --title "Sakhr Dictionary Revive v$VER" \
-            --notes "Sakhr Dictionary Revive: the 1996 Sakhr dictionary reborn in WinUI 3. English-Arabic (59,427 lemmas) and Arabic-English (Wiktionary), fully offline. brought to you by app.instinct AI" \
+            --notes "Sakhr Dictionary Revive: the 1996 Sakhr dictionary reborn in WinUI 3. English-Arabic (59,427 lemmas) and Arabic-English (Wiktionary), fully offline. brought to you by app.instinct.com AI" \
             "SakhrDictionaryRevive-v$VER-portable-win-x64.zip" \
             "SakhrDictionaryRevive-v$VER-installer-win-x64.exe" \
             "SakhrDictionaryRevive-v$VER-installer-.NET-runtime-dependent-win-x64.exe"

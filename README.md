@@ -112,7 +112,7 @@ framework-dependent، ومثبّت Windows App Runtime مضمّن في ملف ا
 
 المطوّر: محمد النجار
 
-المساهمون: app.instinct
+المساهمون: app.instinct.com
 
 [brought to you by Instinct](https://instinct.com)
 

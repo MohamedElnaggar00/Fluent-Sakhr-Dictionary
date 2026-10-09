@@ -22,7 +22,7 @@ public partial class AboutPage : Page
             "Works fully offline - both databases are bundled inside the app, no internet needed.",
             "يعمل دون اتصال بالإنترنت إطلاقًا - كلتا قاعدتي البيانات مضمّنتان داخل التطبيق.");
         DevText.Text = Loc.T("Developer: Mohamed Elnaggar", "المطور: Mohamed Elnaggar");
-        ContribText.Text = Loc.T("Contributors: app.instinct", "المساهمون: app.instinct");
+        ContribText.Text = Loc.T("Contributors: app.instinct.com", "المساهمون: app.instinct.com");
         LicenseText.Text = Loc.T("License: MIT", "الترخيص: MIT");
         DataEnText.Text = Loc.T("English-Arabic data: the original 1996 Sakhr dictionary", "بيانات إنجليزي-عربي: قاموس صخر الأصلي لعام 1996");
         DataArText.Text = Loc.T("Arabic-English data: English Wiktionary via kaikki.org (wiktextract), CC BY-SA 4.0", "بيانات عربي-إنجليزي: قاموس Wiktionary الإنجليزي عبر kaikki.org (wiktextract)، رخصة CC BY-SA 4.0");

@@ -117,7 +117,7 @@ setup.
 
 Developer: Mohamed Elnaggar
 
-Contributors: app.instinct
+Contributors: app.instinct.com
 
 [brought to you by Instinct](https://instinct.com)
 
