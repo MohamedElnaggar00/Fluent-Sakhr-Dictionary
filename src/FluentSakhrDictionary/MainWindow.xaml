@@ -25,6 +25,9 @@
                         IsSettingsVisible="False"
                         OpenPaneLength="200"
                         SelectionChanged="Nav_SelectionChanged">
+            <NavigationView.Resources>
+                <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent"/>
+            </NavigationView.Resources>
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Search" Tag="search" IsSelected="True">
                     <NavigationViewItem.Icon><FontIcon Glyph="&#xE721;"/></NavigationViewItem.Icon>
@@ -38,7 +41,14 @@
                     <NavigationViewItem.Icon><FontIcon Glyph="&#xE946;"/></NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>
-            <Frame x:Name="ContentFrame"/>
+            <!-- Floating content card: Mica shows through at the right/bottom margins -->
+            <Border Margin="0,0,16,16"
+                    CornerRadius="8"
+                    Background="{ThemeResource LayerFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <Frame x:Name="ContentFrame"/>
+            </Border>
         </NavigationView>
     </Grid>
 </Window>
