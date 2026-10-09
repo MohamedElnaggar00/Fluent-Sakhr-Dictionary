@@ -54,7 +54,7 @@ static class Program
         var panel = new StackPanel { Margin = new Thickness(28) };
         panel.Children.Add(new TextBlock { Text = "About", FontSize = 24, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0,0,0,18) });
         var about = new StackPanel { Margin = new Thickness(20), HorizontalAlignment = HorizontalAlignment.Center };
-        about.Children.Add(new Border { Width = 104, Height = 104, CornerRadius = new CornerRadius(18), Background = new SolidColorBrush(Color.FromRgb(196,56,28)), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0,0,0,14), Child = new Image { Width = 72, Height = 72, Source = new BitmapImage(new Uri("pack://application:,,,/logo.png")) } });
+        about.Children.Add(new Border { Width = 104, Height = 104, CornerRadius = new CornerRadius(18), Background = new SolidColorBrush(Color.FromRgb(0,166,166)), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0,0,0,14), Child = new Image { Width = 72, Height = 72, Source = new BitmapImage(new Uri("pack://application:,,,/logo.png")) } });
         about.Children.Add(Text("Fluent Sakhr Dictionary", 24));
         about.Children.Add(Text("قاموس صخر", 16));
         about.Children.Add(Text("Version " + Version, 14));
