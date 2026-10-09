@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [vP1-u3plusRes, vP2-p1plusBoxRes]
+        variant: [vQ1-addRowSpacing, vQ2-longSubtitle, vQ3-both]
     steps:
       - uses: actions/checkout@v4
 
