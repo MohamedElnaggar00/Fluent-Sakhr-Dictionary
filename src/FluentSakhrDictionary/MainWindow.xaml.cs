@@ -40,7 +40,7 @@ public partial class MainWindow : Window
             {
                 var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
                 WindowChrome.Apply(hwnd);
-                WindowChrome.SetRtlMirror(hwnd, Loc.IsArabic);
+                if (App.ScreenshotPath == null) WindowChrome.SetRtlMirror(hwnd, Loc.IsArabic);
             }
             catch { }
             if (ContentFrame.Content is SearchPage sp) sp.FocusSearchBox();
