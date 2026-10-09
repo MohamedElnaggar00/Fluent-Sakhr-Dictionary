@@ -1,4 +1,4 @@
-# Fluent Sakhr
+# Fluent Sakhr Dictionary
 
 The classic Sakhr Dictionary (قاموس صخر) rebuilt as a modern Windows app:
 native WinUI 3, Mica, instant search, full RTL support - the same design DNA
