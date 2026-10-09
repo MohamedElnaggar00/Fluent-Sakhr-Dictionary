@@ -34,6 +34,8 @@ public class WinQ {
   public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr w, IntPtr l, uint flags, uint timeout, out IntPtr result);
   [DllImport("user32.dll", EntryPoint="SendMessageTimeoutA")]
   public static extern IntPtr SendMessageTimeoutA(IntPtr h, uint msg, IntPtr w, byte[] l, uint flags, uint timeout, out IntPtr result);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)]
+  public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr w, StringBuilder l, uint flags, uint timeout, out IntPtr result);
   [DllImport("kernel32.dll")] public static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
   [DllImport("kernel32.dll")] public static extern bool CloseHandle(IntPtr h);
   [DllImport("kernel32.dll")] public static extern int VirtualQueryEx(IntPtr proc, IntPtr addr, out MEMORY_BASIC_INFORMATION mbi, uint len);
@@ -105,6 +107,7 @@ public class WinQ {
 }
 '@
 Add-Type -TypeDefinition $cs -ReferencedAssemblies System.Windows.Forms
+if (-not ([System.Management.Automation.PSTypeName]'WinQ').Type) { Log "FATAL: WinQ compile failed"; exit 1 }
 
 function Shot($name) {
   try {
