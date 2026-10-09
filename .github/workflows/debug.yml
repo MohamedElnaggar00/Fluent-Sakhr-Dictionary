@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [vR1-noTemplate, vR2-noLayout, vR4-ItemsControl]
+        variant: [vT1-noForeground, vT2-noFlowDir, vT3-literalText, vT4-noHorizAlign]
     steps:
       - uses: actions/checkout@v4
 
