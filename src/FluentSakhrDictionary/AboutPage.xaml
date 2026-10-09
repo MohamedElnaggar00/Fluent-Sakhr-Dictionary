@@ -25,7 +25,9 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1">
                 <StackPanel Spacing="8">
-                    <TextBlock Text="brought to you by app.instinct AI" FontSize="14" FontWeight="SemiBold"/>
+                    <HyperlinkButton Content="brought to you by Instinct"
+                                     NavigateUri="https://instinct.com"
+                                     FontSize="14" FontWeight="SemiBold" Padding="0"/>
                     <TextBlock Text="Developer: Mohamed Elnaggar" FontSize="13"/>
                     <TextBlock Text="Contributors: app.instinct" FontSize="13"/>
                     <TextBlock Text="License: MIT" FontSize="13"/>

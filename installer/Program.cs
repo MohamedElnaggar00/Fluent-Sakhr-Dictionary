@@ -58,7 +58,7 @@ static class Program
         about.Children.Add(Text("Sakhr Dictionary Revive", 24));
         about.Children.Add(Text("قاموس صخر", 16));
         about.Children.Add(Text("Version " + Version, 14));
-        about.Children.Add(Text("brought to you by app.instinct AI", 14));
+        about.Children.Add(Text("brought to you by Instinct", 14));
         about.Children.Add(Text("Developer: Mohamed Elnaggar", 14));
         panel.Children.Add(new Border { CornerRadius = new CornerRadius(12), Background = Brushes.White, BorderBrush = new SolidColorBrush(Color.FromRgb(224,224,230)), BorderThickness = new Thickness(1), Child = about });
         panel.Children.Add(new TextBlock { Text = "The app installs into Program Files. Requirements are checked and downloaded from Microsoft when missing, so an internet connection may be needed once.", TextWrapping = TextWrapping.Wrap, FontSize = 13, Margin = new Thickness(0,18,0,12), Foreground = Brushes.DimGray });

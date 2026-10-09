@@ -110,6 +110,8 @@ def note_from_tags(tags):
     return " ".join(keep)
 
 FORM_OF_RE = re.compile(r"^(.*?)\s+form of\s+\S+.*$", re.IGNORECASE)
+AR_FORM_OK = re.compile(r"^[\u0621-\u064A\u0671-\u06D3\u064B-\u0652\u0640 ]+$")
+AR_HEAD_NOTE = re.compile(r"^:?\s*(.*?)\s+of\s+\S")
 EN_FORM_OK = re.compile(r"^[A-Z][A-Z0-9 '\.\-]*$")
 
 def add_en(form, lemma, note):
@@ -125,9 +127,19 @@ def add_en(form, lemma, note):
         en_pairs[form] = (lemma, note)
 
 def add_ar(form, lemma, note):
+    # Arabic conjugation-table rows from direction 1 embed the real form after
+    # the last "# ": ": first-person singular ... of X # أُسْتَكْتَبُ".
+    if "# " in form:
+        head, _, tail = form.rpartition("# ")
+        m = AR_HEAD_NOTE.match(head.strip())
+        if m:
+            note = m.group(1).strip()
+        form = tail
     form = form.strip()
     lemma = lemma.strip()
     if not form or not lemma or form == lemma:
+        return
+    if not AR_FORM_OK.match(form):
         return
     lf = normalize_arabic(form)
     ll = normalize_arabic(lemma)
@@ -135,8 +147,10 @@ def add_ar(form, lemma, note):
         return
     if ll not in AR_KEYS or lf in AR_KEYS:
         return
-    if form not in ar_pairs:
-        ar_pairs[form] = (lemma, note)
+    if note.strip() == "canonical":
+        return
+    if lf not in ar_pairs:
+        ar_pairs[lf] = (form, lemma, note)
 
 def sense_note(sense):
     for g in sense.get("glosses") or []:
@@ -160,7 +174,14 @@ for line in sys.stdin.buffer:
         add, lemma_ok = add_ar, normalize_arabic(word) in AR_KEYS
     else:
         continue
-    # Direction 1: lemma entry with a forms array (word itself is the lemma)
+    # Direction 2 first: form entries with form_of / alt_of links carry real glosses.
+    for sense in obj.get("senses") or []:
+        for key in ("form_of", "alt_of"):
+            for fo in sense.get(key) or []:
+                lemma = fo.get("word", "")
+                if lemma:
+                    add(word, lemma, sense_note(sense))
+    # Direction 1: lemma entries with a forms array fill in what direction 2 missed.
     if lemma_ok:
         for f in obj.get("forms") or []:
             form = f.get("form", "")
@@ -168,20 +189,13 @@ for line in sys.stdin.buffer:
             if not form or "romanization" in tags or "table-tags" in tags:
                 continue
             add(form, word, note_from_tags(tags))
-    # Direction 2: form entry whose senses link back via form_of / alt_of
-    for sense in obj.get("senses") or []:
-        for key in ("form_of", "alt_of"):
-            for fo in sense.get(key) or []:
-                lemma = fo.get("word", "")
-                if lemma:
-                    add(word, lemma, sense_note(sense))
 
 with open("data/inflections-en.jsonl", "w", encoding="utf-8") as out:
     for form in sorted(en_pairs):
         lemma, note = en_pairs[form]
         out.write(json.dumps({"form": form, "lemma": lemma, "note": note}, ensure_ascii=False) + "\n")
 with open("data/inflections-ar.jsonl", "w", encoding="utf-8") as out:
-    for form in sorted(ar_pairs):
-        lemma, note = ar_pairs[form]
+    for lf in sorted(ar_pairs):
+        form, lemma, note = ar_pairs[lf]
         out.write(json.dumps({"form": form, "lemma": lemma, "note": note}, ensure_ascii=False) + "\n")
 print(f"{len(en_pairs)} en pairs, {len(ar_pairs)} ar pairs", file=sys.stderr)
