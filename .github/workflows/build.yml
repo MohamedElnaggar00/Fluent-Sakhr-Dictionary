@@ -54,13 +54,15 @@ jobs:
           Write-Host "App still running after 10s"
           Stop-Process -Id $p.Id -Force
 
-      - name: Capture app screenshot (CAT lookup, light + dark)
+      - name: Capture app screenshots (CAT light + dark, Arabic قط)
         shell: pwsh
         run: |
           $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-light.png",'--shot-word','CAT' -PassThru -Wait
           if (-not (Test-Path app-light.png)) { if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; Write-Error "Light screenshot missing"; exit 1 }
           $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-dark.png",'--shot-word','CAT','--theme','Dark' -PassThru -Wait
           if (-not (Test-Path app-dark.png)) { if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; Write-Error "Dark screenshot missing"; exit 1 }
+          $p = Start-Process publish\FluentSakhrDictionary.exe -ArgumentList '--screenshot',"$PWD\app-arabic.png",'--shot-word','قط' -PassThru -Wait
+          if (-not (Test-Path app-arabic.png)) { if (Test-Path "$env:APPDATA\FluentSakhrDictionary\crash.log") { Get-Content "$env:APPDATA\FluentSakhrDictionary\crash.log" }; Write-Error "Arabic screenshot missing"; exit 1 }
           Write-Host "Screenshots captured"
 
       - uses: actions/upload-artifact@v4
@@ -70,3 +72,4 @@ jobs:
             publish
             app-light.png
             app-dark.png
+            app-arabic.png

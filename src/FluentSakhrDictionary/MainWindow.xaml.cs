@@ -16,7 +16,7 @@ public partial class MainWindow : Window
         Title = "Fluent Sakhr Dictionary";
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
-        AppWindow.Resize(new Windows.Graphics.SizeInt32(1024, 680));
+        AppWindow.Resize(new Windows.Graphics.SizeInt32(1200, 700));
         ApplyTheme(_settings.Theme);
         ApplyBackdrop(_settings.Backdrop);
         try

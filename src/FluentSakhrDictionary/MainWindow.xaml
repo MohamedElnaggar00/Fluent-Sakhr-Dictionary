@@ -18,7 +18,8 @@
         </Grid>
 
         <NavigationView x:Name="Nav" Grid.Row="1"
-                        PaneDisplayMode="Left"
+                        PaneDisplayMode="LeftCompact"
+                        IsPaneOpen="False"
                         IsPaneToggleButtonVisible="True"
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="False"
@@ -28,13 +29,15 @@
                 <NavigationViewItem Content="Search" Tag="search" IsSelected="True">
                     <NavigationViewItem.Icon><FontIcon Glyph="&#xE721;"/></NavigationViewItem.Icon>
                 </NavigationViewItem>
+            </NavigationView.MenuItems>
+            <NavigationView.FooterMenuItems>
                 <NavigationViewItem Content="Settings" Tag="settings">
                     <NavigationViewItem.Icon><FontIcon Glyph="&#xE713;"/></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="About" Tag="about">
                     <NavigationViewItem.Icon><FontIcon Glyph="&#xE946;"/></NavigationViewItem.Icon>
                 </NavigationViewItem>
-            </NavigationView.MenuItems>
+            </NavigationView.FooterMenuItems>
             <Frame x:Name="ContentFrame"/>
         </NavigationView>
     </Grid>
