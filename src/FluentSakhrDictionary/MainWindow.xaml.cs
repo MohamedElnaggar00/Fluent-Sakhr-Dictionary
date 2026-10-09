@@ -8,7 +8,6 @@ namespace FluentSakhrDictionary;
 public partial class MainWindow : Window
 {
     readonly Settings _settings;
-    bool _welcomedShown;
 
     public MainWindow()
     {
@@ -33,16 +32,9 @@ public partial class MainWindow : Window
         catch { }
         ApplyLanguage();
         ContentFrame.Navigate(typeof(SearchPage));
-        Activated += async (_, _) =>
+        Activated += (_, _) =>
         {
             if (ContentFrame.Content is SearchPage sp) sp.FocusSearchBox();
-            // First launch with the Wiktionary feature: welcome once the window is up.
-            // Marked shown only after the dialog actually displays, so a failed attempt retries.
-            if (!_welcomedShown && !_settings.Welcomed && App.ScreenshotPath == null)
-            {
-                _welcomedShown = true;
-                await ShowWelcome();
-            }
         };
         if (App.ScreenshotPath != null) RunScreenshot();
     }
@@ -61,35 +53,6 @@ public partial class MainWindow : Window
     public void RefreshCurrentPage()
     {
         if (ContentFrame.Content != null) ContentFrame.Navigate(ContentFrame.Content.GetType());
-    }
-
-    /// <summary>First launch only: introduce the optional Wiktionary database and let the
-    /// user enable it right here. Dismissing keeps it off; Settings can change it anytime.</summary>
-    async Task ShowWelcome()
-    {
-        var dialog = new ContentDialog
-        {
-            XamlRoot = Content.XamlRoot,
-            Title = Loc.T("Welcome to Sakhr Dictionary Revive", "مرحبًا بك في قاموس صخر الحديث"),
-            Content = new TextBlock
-            {
-                TextWrapping = TextWrapping.Wrap,
-                Text = Loc.T(
-                    "This app can also use the Wiktionary database to improve word understanding and matching: it powers inflection lookup (ABANDONS -> Abandon, يكتبون -> كتب) and adds extra Arabic meanings. Turn it on now, or leave it off to use the original 1996 Sakhr database only. You can change this anytime in Settings.",
-                    "يمكن للتطبيق أيضًا استخدام قاعدة بيانات Wiktionary لتحسين فهم الكلمات ومطابقتها: فهي تدعم البحث عن التصريفات (ABANDONS ← Abandon، ويكتبون ← كتب) وتضيف معاني عربية إضافية. فعّلها الآن، أو اتركها متوقفة لاستخدام قاعدة صخر الأصلية لعام 1996 وحدها. يمكنك تغيير ذلك في أي وقت من الإعدادات."),
-            },
-            PrimaryButtonText = Loc.T("Turn on Wiktionary", "تفعيل Wiktionary"),
-            CloseButtonText = Loc.T("Keep it off", "إبقاؤها متوقفة"),
-            DefaultButton = ContentDialogButton.Primary,
-        };
-        try
-        {
-            var result = await dialog.ShowAsync();
-            _settings.UseWiktionary = result == ContentDialogResult.Primary;
-            _settings.Welcomed = true;
-            _settings.Save();
-        }
-        catch { /* no XamlRoot yet or a dialog is up: leave Welcomed false and retry next launch */ }
     }
 
     async void RunScreenshot()
