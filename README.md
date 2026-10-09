@@ -97,7 +97,7 @@ dotnet publish src/FluentSakhrDictionary/FluentSakhrDictionary.csproj -c Release
 يتطلب الأمر .NET 8 SDK وحزمة Windows App SDK 1.6. يعمل التطبيق بنمط
 framework-dependent، ومثبّت Windows App Runtime مضمّن في ملف التثبيت.
 
-## الشكر
+## عن المطورون
 
 المطوّر: محمد النجار
 

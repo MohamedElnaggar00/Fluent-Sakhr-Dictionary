@@ -102,7 +102,7 @@ Requires .NET 8 SDK and the Windows App SDK 1.6 workload. The app runs
 framework-dependent: the Windows App Runtime installer is bundled in the
 setup.
 
-## Credits
+## About the Developers
 
 Developer: Mohamed Elnaggar
 
