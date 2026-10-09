@@ -11,7 +11,7 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1">
                 <StackPanel Spacing="10" HorizontalAlignment="Center">
-                    <Image Source="/app.ico" Width="96" Height="96"/>
+                    <Image Source="/app-icon-256.png" Width="96" Height="96"/>
                     <TextBlock Text="Sakhr Dictionary Revive" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                     <TextBlock Text="قاموس صخر" FontSize="18" HorizontalAlignment="Center"/>
                     <TextBlock x:Name="VersionText" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
