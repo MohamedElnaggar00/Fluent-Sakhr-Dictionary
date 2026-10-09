@@ -46,7 +46,7 @@ public class WinQ {
     return r;
   }
   public static byte[] ReadMem(int pid, IntPtr addr, int size) {
-    IntPtr proc = OpenProcess(0x0410, false, pid);
+    IntPtr proc = OpenProcess(0x0410, false, (uint)pid);
     if (proc == IntPtr.Zero) return null;
     try {
       byte[] buf = new byte[size]; IntPtr read;
