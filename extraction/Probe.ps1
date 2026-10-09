@@ -4,6 +4,10 @@
 # cause: the exe finds its own dir via ANSI GetModuleFileNameA; under the runner's
 # en-US codepage the Arabic folder name mangles to '?' so LoadLibrary of its own
 # DLLs fails. v4: run a copy from an all-ASCII path (C:\sakhrapp\sakhr.exe).
+# v4 findings: ASCII path WORKS - app launches clean, DictWClass1 window shown, UI
+# renders (owner-drawn Arabic renders fine; no child controls - custom controls).
+# Posted WM_CHAR had no effect. v5: real input via SendInput (click input box, type,
+# Enter, click Meaning), direct clipboard read (Windows PowerShell is STA).
 $ErrorActionPreference = 'Continue'
 $OutDir = "$env:RUNNER_TEMP\probe-results"
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
@@ -34,6 +38,40 @@ public class WinP {
   [DllImport("user32.dll", CharSet=CharSet.Unicode)]
   public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr w, IntPtr l, uint flags, uint timeout, out IntPtr result);
   [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
+  [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+  [DllImport("user32.dll")] public static extern void mouse_event(uint flags, uint dx, uint dy, uint data, IntPtr extra);
+  [DllImport("user32.dll")] public static extern uint SendInput(uint n, INPUT[] inputs, int size);
+  [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
+  [StructLayout(LayoutKind.Sequential)] public struct KEYBDINPUT { public ushort wVk; public ushort wScan; public uint dwFlags; public uint time; public IntPtr dwExtraInfo; }
+  [StructLayout(LayoutKind.Sequential)] public struct INPUT { public uint type; public KEYBDINPUT ki; }
+  public const uint INPUT_KEYBOARD = 1;
+  public const uint KEYEVENTF_KEYUP = 0x0002;
+  public const uint KEYEVENTF_UNICODE = 0x0004;
+  public const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
+  public const uint MOUSEEVENTF_LEFTUP = 0x0004;
+  public static void ClickAt(int x, int y) {
+    SetCursorPos(x, y);
+    System.Threading.Thread.Sleep(150);
+    mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, IntPtr.Zero);
+    System.Threading.Thread.Sleep(60);
+    mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, IntPtr.Zero);
+  }
+  public static void TypeText(string t) {
+    foreach (char c in t) {
+      var down = new INPUT { type = INPUT_KEYBOARD, ki = new KEYBDINPUT { wVk = 0, wScan = c, dwFlags = KEYEVENTF_UNICODE } };
+      var up   = new INPUT { type = INPUT_KEYBOARD, ki = new KEYBDINPUT { wVk = 0, wScan = c, dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP } };
+      SendInput(1, new[] { down }, System.Runtime.InteropServices.Marshal.SizeOf(typeof(INPUT)));
+      SendInput(1, new[] { up }, System.Runtime.InteropServices.Marshal.SizeOf(typeof(INPUT)));
+    }
+  }
+  public static void PressEnter() {
+    var down = new INPUT { type = INPUT_KEYBOARD, ki = new KEYBDINPUT { wVk = 0x0D, wScan = 0, dwFlags = 0 } };
+    var up   = new INPUT { type = INPUT_KEYBOARD, ki = new KEYBDINPUT { wVk = 0x0D, wScan = 0, dwFlags = KEYEVENTF_KEYUP } };
+    SendInput(1, new[] { down }, System.Runtime.InteropServices.Marshal.SizeOf(typeof(INPUT)));
+    SendInput(1, new[] { up }, System.Runtime.InteropServices.Marshal.SizeOf(typeof(INPUT)));
+  }
 
   public const uint SMTO_ABORTIFHUNG = 0x0002;
   public const uint WM_SETTEXT = 0x000C;
@@ -192,45 +230,41 @@ if ($appHwnd -eq [IntPtr]::Zero) {
   Start-Sleep -Seconds 2
   Shot "probe-03-window-shown.png"
 
-  # find edit control + likely lookup button among children
-  $editHwnd = [IntPtr]::Zero
-  $btnHwnd = [IntPtr]::Zero
-  foreach ($k in [WinP]::KidHwnds($appHwnd)) {
-    $kc = [WinP]::Cls($k)
-    if ($editHwnd -eq [IntPtr]::Zero -and $kc -match 'edit') { $editHwnd = $k }
-    if ($btnHwnd -eq [IntPtr]::Zero -and $kc -match 'button') { $btnHwnd = $k }
-  }
-  Log "edit child: 0x$($editHwnd.ToInt64().ToString('X'))  button child: 0x$($btnHwnd.ToInt64().ToString('X'))"
-
-  # --- 6. drive lookup "cat" ---------------------------------------------
-  if ($editHwnd -ne [IntPtr]::Zero) {
-    $ok = [WinP]::SetText($editHwnd, 'cat')
-    Log "WM_SETTEXT cat on edit: sent=$ok"
-  } else {
-    foreach ($ch in 'c','a','t') { [WinP]::CharMsg($appHwnd, $ch) | Out-Null }
-    Log "posted WM_CHAR cat to main window (no edit child found)"
-  }
+  # --- 6. drive lookup "cat" with real input -----------------------------
+  # deterministic geometry: park the window at (100,100)
+  [WinP]::SetWindowPos($appHwnd, [IntPtr]::Zero, 100, 100, 0, 0, 0x0001) | Out-Null  # SWP_NOSIZE
   Start-Sleep -Milliseconds 500
-  if ($btnHwnd -ne [IntPtr]::Zero) {
-    $ok = [WinP]::Click($btnHwnd)
-    Log "BM_CLICK on first button: sent=$ok"
-  } else {
-    [WinP]::Key($appHwnd, [WinP]::VK_RETURN) | Out-Null
-    Log "posted Enter to main window"
-  }
-  Start-Sleep -Seconds 3
+  $r = New-Object WinP+RECT
+  [WinP]::GetWindowRect($appHwnd, [ref]$r) | Out-Null
+  Log "window rect: ($($r.Left),$($r.Top))-($($r.Right),$($r.Bottom)) size=$($r.Right-$r.Left)x$($r.Bottom-$r.Top)"
+  # input box center measured at ~ (+144,+71) from window origin in v4 screenshots
+  $inX = $r.Left + 144; $inY = $r.Top + 71
+  Log "clicking input box at ($inX,$inY)"
+  [WinP]::ClickAt($inX, $inY)
+  Start-Sleep -Milliseconds 600
+  [WinP]::TypeText('cat')
+  Log "typed cat via SendInput"
+  Start-Sleep -Milliseconds 400
+  [WinP]::PressEnter()
+  Log "pressed Enter"
+  Start-Sleep -Seconds 2
   Shot "probe-04-after-cat.png"
 
-  # --- 7. clipboard probe (STA-guarded) ------------------------------------
+  # alternative trigger: click the "Meaning" button (~ +342,+71 from origin)
+  [WinP]::ClickAt($r.Left + 342, $r.Top + 71)
+  Log "clicked Meaning button"
+  Start-Sleep -Seconds 2
+  Shot "probe-05-after-meaning-click.png"
+
+  # --- 7. clipboard probe: Ctrl+A Ctrl+C then direct STA read ------------
   try {
-    $clipText = $null
-    $th = [System.Threading.Thread]::new({ $script:clipText = [System.Windows.Forms.Clipboard]::GetText() })
-    $th.SetApartmentState([System.Threading.ApartmentState]::STA)
-    $th.Start()
-    if ($th.Join(5000)) {
-      Log "clipboard length: $($script:clipText.Length)"
-      $script:clipText | Out-File "$OutDir\clipboard.txt" -Encoding utf8
-    } else { Log "clipboard read timed out (5s)" }
+    [System.Windows.Forms.SendKeys]::SendWait("^a")
+    Start-Sleep -Milliseconds 300
+    [System.Windows.Forms.SendKeys]::SendWait("^c")
+    Start-Sleep -Milliseconds 800
+    $clip = [System.Windows.Forms.Clipboard]::GetText()
+    Log "clipboard length: $($clip.Length)"
+    $clip | Out-File "$OutDir\clipboard.txt" -Encoding utf8
   } catch { Log "clipboard read failed: $_" }
 }
 
