@@ -27,12 +27,20 @@
                     <SolidColorBrush x:Key="TextControlElevationBorderFocusedBrush" Color="{ThemeResource SystemAccentColor}"/>
                 </TextBox.Resources>
             </TextBox>
-            <ListView x:Name="ResultsList" Grid.Row="1"
+            <ListView x:Name="ResultsList" Grid.Row="1" FlowDirection="LeftToRight"
                       SelectionMode="Single"
                       SelectionChanged="ResultsList_SelectionChanged">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="FlowDirection" Value="LeftToRight"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding DisplayWord}" FlowDirection="{Binding ItemFlow}" FontSize="15" Padding="4,6"/>
+                        <Grid FlowDirection="LeftToRight">
+                            <TextBlock Text="{Binding DisplayWord}" FlowDirection="{Binding ItemFlow}" TextAlignment="{Binding ItemAlignment}" FontSize="15" Padding="4,6"/>
+                        </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
