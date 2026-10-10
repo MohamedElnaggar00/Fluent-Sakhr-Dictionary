@@ -1,0 +1,32 @@
+name: Apply staged hotfix
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/apply-staged.yml']
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Move staged files into place
+        run: |
+          set -e
+          cd _incoming
+          mvf() { f=$(ls | grep -E "^[0-9]+-$1\$" | head -1); [ -n "$f" ] || { echo missing $1; exit 1; }; mv -f "$f" "../$2/$1"; }
+          mvf derived-forms.jsonl data
+          mvf translations-supplement.jsonl data
+          mvf build_derived_forms.py tools
+          mvf DictionaryService.cs src/FluentSakhrDictionary
+          mvf Loc.cs src/FluentSakhrDictionary
+          mvf SearchPage.xaml.cs src/FluentSakhrDictionary
+          mvf FluentSakhrDictionary.csproj src/FluentSakhrDictionary
+          mvf Program.cs installer
+          cd ..
+          rm -rf _incoming
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add -A
+          git commit -m "Sakhr hot fix v1.0.1: every headword resolves offline (derived forms + added translations)"
+          git push
