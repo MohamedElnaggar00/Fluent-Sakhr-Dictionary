@@ -6,6 +6,9 @@ on:
     paths: ['src/**', 'installer/**', '.github/workflows/build.yml']
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-2022
@@ -53,6 +56,22 @@ jobs:
           if ($p.HasExited) { Write-Error "App exited early with code $($p.ExitCode)"; if (Test-Path "$env:APPDATA\SakhrDictionaryRevive\crash.log") { Get-Content "$env:APPDATA\SakhrDictionaryRevive\crash.log" }; exit 1 }
           Write-Host "App still running after 10s"
           Stop-Process -Id $p.Id -Force
+
+      - name: Capture RTL suggestion regression (production caption mirroring)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force "$env:APPDATA\SakhrDictionaryRevive" | Out-Null
+          foreach ($lang in @('ar', 'en')) {
+            @{Language=$lang; UseWiktionary=$false; Theme='Dark'} | ConvertTo-Json | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
+            foreach ($word in @('aba', 'قط')) {
+              $suffix = if ($word -eq 'aba') { 'aba' } else { 'arabic' }
+              $file = "app-suggestions-$lang-$suffix.png"
+              $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\$file",'--shot-word',$word -PassThru
+              if (-not $p.WaitForExit(120000)) { Stop-Process -Id $p.Id -Force; throw "Capture hung: $file" }
+              if ($p.ExitCode -ne 0 -or -not (Test-Path $file)) { throw "Capture failed: $file" }
+            }
+          }
+          Remove-Item "$env:APPDATA\SakhrDictionaryRevive\settings.json" -Force
 
       - name: Capture app screenshots (CAT light + dark, Arabic قط, inflections)
         shell: pwsh
@@ -143,6 +162,7 @@ jobs:
           name: build
           path: |
             publish
+            app-suggestions-*.png
             app-light.png
             app-dark.png
             app-arabic.png
@@ -164,3 +184,18 @@ jobs:
             app-settings-his.png
             app-settings-ar.png
             app-about.png
+
+      - name: Publish regression screenshots for review
+        shell: pwsh
+        run: |
+          $d = Join-Path $env:RUNNER_TEMP 'rtl-shots'
+          New-Item -ItemType Directory -Force -Path $d | Out-Null
+          Copy-Item app-suggestions-*.png $d
+          Push-Location $d
+          git init -q
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add .
+          git commit -qm "RTL regression screenshots"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/ci-shots
+          Pop-Location
