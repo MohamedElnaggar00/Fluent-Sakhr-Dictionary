@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.UI.Xaml.Automation;
 
 namespace FluentSakhrDictionary;
 
@@ -17,7 +18,9 @@ public partial class MainWindow : Window
         Loc.Apply(_settings);
         Title = "Sakhr Dictionary Revive - قاموس صخر الحديث";
         ExtendsContentIntoTitleBar = true;
+        AppWindow.TitleBar.PreferredHeightOption = Microsoft.UI.Windowing.TitleBarHeightOption.Collapsed;
         SetTitleBar(AppTitleBar);
+        AppWindow.Changed += (_, _) => UpdateMaximizeGlyph();
         AppWindow.Resize(new Windows.Graphics.SizeInt32(1200, 700));
         // Taskbar/Alt-Tab icon: unpackaged apps do not inherit the exe icon on the window.
         try { AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); } catch { }
@@ -40,7 +43,7 @@ public partial class MainWindow : Window
             {
                 var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
                 WindowChrome.Apply(hwnd);
-                WindowChrome.SetRtlMirror(hwnd, Loc.IsArabic);
+                WindowChrome.ClearNativeMirror(hwnd);
             }
             catch { }
             if (ContentFrame.Content is SearchPage sp) sp.FocusSearchBox();
@@ -54,11 +57,37 @@ public partial class MainWindow : Window
     {
         Root.FlowDirection = Loc.IsArabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         // Captures use the same native caption and XAML layout path as normal launches.
-        try { WindowChrome.SetRtlMirror(WinRT.Interop.WindowNative.GetWindowHandle(this), Loc.IsArabic); } catch { }
+        try { WindowChrome.ClearNativeMirror(WinRT.Interop.WindowNative.GetWindowHandle(this)); } catch { }
+        AutomationProperties.SetName(MinimizeButton, Loc.T("Minimize", "تصغير"));
+        AutomationProperties.SetName(MaximizeButton, Loc.T("Maximize or restore", "تكبير أو استعادة"));
+        AutomationProperties.SetName(CloseButton, Loc.T("Close", "إغلاق"));
         NavSearch.Content = Loc.T("Search", "بحث");
         NavSettings.Content = Loc.T("Settings", "الإعدادات");
         NavAbout.Content = Loc.T("About", "حول");
     }
+
+    void Minimize_Click(object sender, RoutedEventArgs e)
+    {
+        if (AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter p) p.Minimize();
+    }
+
+    void Maximize_Click(object sender, RoutedEventArgs e)
+    {
+        if (AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter p)
+        {
+            if (p.State == Microsoft.UI.Windowing.OverlappedPresenterState.Maximized) p.Restore();
+            else p.Maximize();
+            UpdateMaximizeGlyph();
+        }
+    }
+
+    void UpdateMaximizeGlyph()
+    {
+        if (AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter p)
+            MaximizeGlyph.Glyph = p.State == Microsoft.UI.Windowing.OverlappedPresenterState.Maximized ? "\uE923" : "\uE922";
+    }
+
+    void Close_Click(object sender, RoutedEventArgs e) => Close();
 
     /// <summary>Re-navigates to the current page so it re-renders in the new language.</summary>
     public void RefreshCurrentPage()
