@@ -61,6 +61,22 @@ jobs:
           if ($p.HasExited) { Write-Error "App exited early with code $($p.ExitCode)"; exit 1 }
           Stop-Process -Id $p.Id -Force
 
+      - name: Capture RTL suggestion regression (production caption mirroring)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force "$env:APPDATA\SakhrDictionaryRevive" | Out-Null
+          foreach ($lang in @('ar', 'en')) {
+            @{Language=$lang; UseWiktionary=$false; Theme='Dark'} | ConvertTo-Json | Set-Content "$env:APPDATA\SakhrDictionaryRevive\settings.json"
+            foreach ($word in @('aba', 'قط')) {
+              $suffix = if ($word -eq 'aba') { 'aba' } else { 'arabic' }
+              $file = "app-suggestions-$lang-$suffix.png"
+              $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\$file",'--shot-word',$word -PassThru
+              if (-not $p.WaitForExit(120000)) { Stop-Process -Id $p.Id -Force; throw "Capture hung: $file" }
+              if ($p.ExitCode -ne 0 -or -not (Test-Path $file)) { throw "Capture failed: $file" }
+            }
+          }
+          Remove-Item "$env:APPDATA\SakhrDictionaryRevive\settings.json" -Force
+
       - name: Capture app screenshot (CAT lookup)
         shell: pwsh
         run: |
@@ -75,7 +91,7 @@ jobs:
           if (-not (Test-Path app-abjections.png) -or -not (Test-Path app-saddhu.png)) { Write-Error "Screenshot missing"; exit 1 }
           $d = Join-Path $env:RUNNER_TEMP 'shots'
           New-Item -ItemType Directory -Path $d | Out-Null
-          Copy-Item app-light.png,app-abjections.png,app-saddhu.png $d
+          Copy-Item app-light.png,app-abjections.png,app-saddhu.png,app-suggestions-*.png $d
           Push-Location $d
           git init -q
           git config user.name github-actions
@@ -132,6 +148,7 @@ jobs:
           path: |
             installer-screen.png
             installer-screen-dark.png
+            app-suggestions-*.png
             app-light.png
             app-abjections.png
             app-saddhu.png
