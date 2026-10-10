@@ -38,7 +38,7 @@ public partial class MainWindow : Window
         Activated += (_, _) =>
         {
             // DWM attributes can be reset by DPI changes and restore/maximize transitions;
-            // reapply the border suppression and RTL mirror so the frame stays clean.
+            // reapply border suppression and prevent native text reflection.
             try
             {
                 var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
@@ -101,6 +101,8 @@ public partial class MainWindow : Window
         try
         {
             Log("start theme=" + App.ShotTheme + " word=" + App.ShotWord + " path=" + App.ScreenshotPath);
+            // Keep full window pixels inside the hosted Windows desktop.
+            if (App.ShotWidth == 0) AppWindow.Resize(new Windows.Graphics.SizeInt32(1000, 650));
             if (App.ShotTheme != null) ApplyTheme(App.ShotTheme);
             if (App.ShotWidth > 0) { AppWindow.Resize(new Windows.Graphics.SizeInt32(App.ShotWidth, App.ShotHeight)); Log("resized " + App.ShotWidth + "x" + App.ShotHeight); }
             await Task.Delay(1200);
