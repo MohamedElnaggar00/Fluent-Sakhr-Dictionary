@@ -40,7 +40,7 @@ public partial class MainWindow : Window
             {
                 var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
                 WindowChrome.Apply(hwnd);
-                if (App.ScreenshotPath == null) WindowChrome.SetRtlMirror(hwnd, Loc.IsArabic);
+                WindowChrome.SetRtlMirror(hwnd, Loc.IsArabic);
             }
             catch { }
             if (ContentFrame.Content is SearchPage sp) sp.FocusSearchBox();
@@ -53,12 +53,8 @@ public partial class MainWindow : Window
     public void ApplyLanguage()
     {
         Root.FlowDirection = Loc.IsArabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
-        // Skip the frame mirror in screenshot runs: the mirrored DC corrupts captures
-        // (mirror-reversed glyphs). Real runs mirror normally; CI judges content only.
-        if (App.ScreenshotPath == null)
-        {
-            try { WindowChrome.SetRtlMirror(WinRT.Interop.WindowNative.GetWindowHandle(this), Loc.IsArabic); } catch { }
-        }
+        // Captures use the same native caption and XAML layout path as normal launches.
+        try { WindowChrome.SetRtlMirror(WinRT.Interop.WindowNative.GetWindowHandle(this), Loc.IsArabic); } catch { }
         NavSearch.Content = Loc.T("Search", "بحث");
         NavSettings.Content = Loc.T("Settings", "الإعدادات");
         NavAbout.Content = Loc.T("About", "حول");
