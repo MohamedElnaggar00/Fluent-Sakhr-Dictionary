@@ -10,7 +10,7 @@ public record Entry(string Word, string[] Meanings)
     public string Note { get; init; } = "";
     public bool Found => Meanings.Length > 0;
     public string DisplayWord => TitleCase(Word);
-    public Microsoft.UI.Xaml.TextAlignment ItemAlignment => DictionaryService.HasArabicText(DisplayWord) ? Microsoft.UI.Xaml.TextAlignment.Right : Microsoft.UI.Xaml.TextAlignment.Left;
+    public Microsoft.UI.Xaml.HorizontalAlignment ItemHorizontalAlignment => DictionaryService.HasArabicText(DisplayWord) ? Microsoft.UI.Xaml.HorizontalAlignment.Right : Microsoft.UI.Xaml.HorizontalAlignment.Left;
     public Microsoft.UI.Xaml.FlowDirection ItemFlow => DictionaryService.HasArabicText(DisplayWord) ? Microsoft.UI.Xaml.FlowDirection.RightToLeft : Microsoft.UI.Xaml.FlowDirection.LeftToRight;
 
     /// <summary>"CAT FOOD" -&gt; "Cat Food": first letter of each word capital, the rest small.</summary>
@@ -30,7 +30,7 @@ public record Entry(string Word, string[] Meanings)
 public record ArabicResult(string ArabicTerm, string[] Glosses, string Pos, string[] SakhrLemmas)
 {
     public string DisplayWord => ArabicTerm;
-    public Microsoft.UI.Xaml.TextAlignment ItemAlignment => Microsoft.UI.Xaml.TextAlignment.Right;
+    public Microsoft.UI.Xaml.HorizontalAlignment ItemHorizontalAlignment => Microsoft.UI.Xaml.HorizontalAlignment.Right;
     public Microsoft.UI.Xaml.FlowDirection ItemFlow => Microsoft.UI.Xaml.FlowDirection.RightToLeft;
     public bool FromWiktionary => Glosses.Length > 0;
 }
