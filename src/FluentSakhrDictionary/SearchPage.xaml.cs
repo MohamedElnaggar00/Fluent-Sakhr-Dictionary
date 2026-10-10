@@ -98,7 +98,6 @@ public partial class SearchPage : Page
                 if (version != _searchVersion) return;
             }
             _currentRev = DictionaryService.SearchArabic(q, _useWiktionary);
-            ResultsList.FlowDirection = FlowDirection.RightToLeft;
             ResultsList.ItemsSource = _currentRev;
             var exact = _currentRev.FirstOrDefault(x => DictionaryService.NormalizeArabic(x.ArabicTerm) == DictionaryService.NormalizeArabic(q));
             if (_currentRev.Count == 1 || exact != null)
@@ -119,7 +118,6 @@ public partial class SearchPage : Page
         {
             _currentRev = Array.Empty<ArabicResult>();
             _current = DictionaryService.Search(q);
-            ResultsList.FlowDirection = FlowDirection.LeftToRight;
             ResultsList.ItemsSource = _current;
             var exact = _current.FirstOrDefault(x => x.Word.Equals(q, StringComparison.OrdinalIgnoreCase));
             _currentArInflection = null;
