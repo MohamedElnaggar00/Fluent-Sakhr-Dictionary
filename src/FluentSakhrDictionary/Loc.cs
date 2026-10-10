@@ -23,6 +23,8 @@ public static class Loc
 
     public static string Meanings(int n) => IsArabic ? (n == 1 ? "معنى واحد" : n + " معنى") : (n == 1 ? "1 meaning" : n + " meanings");
     public static string EnglishWords(int n) => IsArabic ? (n == 1 ? "كلمة إنجليزية واحدة" : n + " كلمات إنجليزية") : (n == 1 ? "1 English word" : n + " English words");
+    /// <summary>Subtitle prefix for filled records: "Plural of Cat" (kept in English like the form notes) or "Translated".</summary>
+    public static string EntryNote(string note) => note == "Translated" ? (IsArabic ? "ترجمة مضافة" : "Added translation") : note;
     public static string MeaningsFromWiktionary(int n) => IsArabic ? (n == 1 ? "معنى واحد من Wiktionary" : n + " معاني من Wiktionary") : (n == 1 ? "1 meaning from Wiktionary" : n + " meanings from Wiktionary");
     public static string NotFound => T("Not found.", "غير موجود.");
 }

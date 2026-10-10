@@ -17,7 +17,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Product>Sakhr Dictionary Revive</Product>
     <Company>Mohamed Elnaggar</Company>
     <Authors>Mohamed Elnaggar</Authors>
@@ -36,5 +36,7 @@
     <Content Include="..\..\data\inflections-en.jsonl" Link="data\inflections-en.jsonl"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
     <Content Include="..\..\data\inflections-ar.jsonl" Link="data\inflections-ar.jsonl"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
     <Content Include="..\..\data\translations-en-ar.jsonl" Link="data\translations-en-ar.jsonl"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
+    <Content Include="..\..\data\derived-forms.jsonl" Link="data\derived-forms.jsonl"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
+    <Content Include="..\..\data\translations-supplement.jsonl" Link="data\translations-supplement.jsonl"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
   </ItemGroup>
 </Project>

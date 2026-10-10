@@ -5,6 +5,9 @@ namespace FluentSakhrDictionary;
 
 public record Entry(string Word, string[] Meanings)
 {
+    /// <summary>Set when the meanings were not stored for this headword in the 1996 data:
+    /// "Plural of Cat" for a derived form, or "Translated" for a supplementary translation.</summary>
+    public string Note { get; init; } = "";
     public bool Found => Meanings.Length > 0;
     public string DisplayWord => TitleCase(Word);
     public Microsoft.UI.Xaml.FlowDirection ItemFlow => DictionaryService.HasArabicText(DisplayWord) ? Microsoft.UI.Xaml.FlowDirection.RightToLeft : Microsoft.UI.Xaml.FlowDirection.LeftToRight;
@@ -133,6 +136,7 @@ public static class DictionaryService
                         if (token.Length > 1) IndexArabic(token, entry.Word);
                 }
             }
+            FillEmptyEntries(entries);
             entries.Sort((a, b) => string.CompareOrdinal(a.Word, b.Word));
             _entries = entries.ToArray();
             _words = _entries.Select(e => e.Word).ToArray();
@@ -159,6 +163,50 @@ public static class DictionaryService
             _trForms = tr.Keys.ToArray();
             Array.Sort(_trForms, StringComparer.Ordinal);
             _trBuckets = _trForms.Select(k => tr[k]).ToArray();
+    }
+
+
+    /// <summary>1996 records with no Arabic: fill them from the bundled derived-forms table
+    /// (plural/past/adverb... of a headword that has a Sakhr meaning) and the bundled
+    /// supplementary translations. Both files ship inside the app, so this is identical with the
+    /// Wiktionary toggle on, off, or its data missing - nothing here needs the network.</summary>
+    static void FillEmptyEntries(List<Entry> entries)
+    {
+        var byWord = new Dictionary<string, int>(entries.Count, StringComparer.Ordinal);
+        for (int i = 0; i < entries.Count; i++) byWord[entries[i].Word] = i;
+
+        string derivedPath = Path.Combine(AppContext.BaseDirectory, "data", "derived-forms.jsonl");
+        if (File.Exists(derivedPath))
+        {
+            foreach (var line in File.ReadLines(derivedPath))
+            {
+                if (line.Length == 0) continue;
+                using var doc = JsonDocument.Parse(line);
+                var root = doc.RootElement;
+                string word = root.GetProperty("word").GetString() ?? "";
+                string lemma = root.GetProperty("lemma").GetString() ?? "";
+                string rel = root.TryGetProperty("relation", out var r) ? r.GetString() ?? "" : "";
+                if (!byWord.TryGetValue(word, out int wi) || !byWord.TryGetValue(lemma, out int li)) continue;
+                if (entries[wi].Found || !entries[li].Found) continue;
+                string label = (rel.Length > 0 ? char.ToUpperInvariant(rel[0]) + rel[1..] : "Form") + " of " + Entry.TitleCase(lemma);
+                entries[wi] = new Entry(word, entries[li].Meanings) { Note = label };
+            }
+        }
+
+        string supPath = Path.Combine(AppContext.BaseDirectory, "data", "translations-supplement.jsonl");
+        if (File.Exists(supPath))
+        {
+            foreach (var line in File.ReadLines(supPath))
+            {
+                if (line.Length == 0) continue;
+                using var doc = JsonDocument.Parse(line);
+                var root = doc.RootElement;
+                string word = root.GetProperty("word").GetString() ?? "";
+                var ms = root.GetProperty("meanings").EnumerateArray().Select(m => m.GetString() ?? "").Where(m => m.Length > 0).ToArray();
+                if (ms.Length == 0 || !byWord.TryGetValue(word, out int wi) || entries[wi].Found) continue;
+                entries[wi] = new Entry(word, ms) { Note = "Translated" };
+            }
+        }
     }
 
     static void LoadWik()

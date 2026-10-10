@@ -190,7 +190,7 @@ public partial class SearchPage : Page
         if (entry.Found)
         {
             WordSubtitle.FlowDirection = Loc.IsArabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
-        WordSubtitle.Text = Loc.Meanings(entry.Meanings.Length);
+        WordSubtitle.Text = (entry.Note.Length > 0 ? Loc.EntryNote(entry.Note) + " - " : "") + Loc.Meanings(entry.Meanings.Length);
             MeaningsRepeater.Visibility = Visibility.Visible;
             MeaningsRepeater.ItemsSource = entry.Meanings;
             NotFoundText.Visibility = Visibility.Collapsed;
