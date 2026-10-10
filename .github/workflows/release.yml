@@ -67,6 +67,24 @@ jobs:
           $p = Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-light.png",'--shot-word','CAT' -PassThru -Wait
           if (-not (Test-Path app-light.png)) { Write-Error "Screenshot missing"; exit 1 }
 
+      - name: Capture derived-form and added-translation screenshots
+        shell: pwsh
+        run: |
+          Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-abjections.png",'--shot-word','ABJECTIONS' -Wait
+          Start-Process publish\SakhrDictionaryRevive.exe -ArgumentList '--screenshot',"$PWD\app-saddhu.png",'--shot-word','SADDHU' -Wait
+          if (-not (Test-Path app-abjections.png) -or -not (Test-Path app-saddhu.png)) { Write-Error "Screenshot missing"; exit 1 }
+          $d = Join-Path $env:RUNNER_TEMP 'shots'
+          New-Item -ItemType Directory -Path $d | Out-Null
+          Copy-Item app-light.png,app-abjections.png,app-saddhu.png $d
+          Push-Location $d
+          git init -q
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add .
+          git commit -qm "release screenshots"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/ci-shots
+          Pop-Location
+
       - name: Package portable zip
         shell: pwsh
         run: |
@@ -115,6 +133,8 @@ jobs:
             installer-screen.png
             installer-screen-dark.png
             app-light.png
+            app-abjections.png
+            app-saddhu.png
 
       - name: Create pre-release with the three assets
         shell: bash
@@ -122,8 +142,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VER="${{ steps.v.outputs.version }}"
-          PRE=""; if [[ "$VER" == 0.* ]]; then PRE="--prerelease"; fi
-          gh release create "v$VER" $PRE --title "Sakhr Dictionary Revive v$VER" \
+          PRE=""; PRE="--prerelease"
+          gh release create "v$VER" $PRE --draft --title "Sakhr Dictionary Revive v$VER" \
             --notes "Sakhr Dictionary Revive: the 1996 Sakhr dictionary reborn in WinUI 3. English-Arabic (59,427 lemmas) and Arabic-English (Wiktionary), fully offline. brought to you by app.instinct.com AI" \
             "SakhrDictionaryRevive-v$VER-portable-win-x64.zip" \
             "SakhrDictionaryRevive-v$VER-installer-win-x64.exe" \
