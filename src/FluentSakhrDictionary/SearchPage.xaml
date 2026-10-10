@@ -38,8 +38,8 @@
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <Grid FlowDirection="LeftToRight">
-                            <TextBlock Text="{Binding DisplayWord}" FlowDirection="{Binding ItemFlow}" HorizontalAlignment="{Binding ItemHorizontalAlignment}" FontSize="15" Padding="4,6"/>
+                        <Grid FlowDirection="LeftToRight" HorizontalAlignment="{Binding ItemHorizontalAlignment}">
+                            <TextBlock Text="{Binding DisplayWord}" FlowDirection="{Binding ItemFlow}" FontSize="15" Padding="4,6"/>
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
